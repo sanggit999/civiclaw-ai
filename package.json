@@ -1,0 +1,16 @@
+{
+  "name": "civiclaw-ai",
+  "version": "1.0.0",
+  "description": "CivicLaw AI - Spec-Driven Development Workflow",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sync": "node scripts/sync-ai-config.mjs",
+    "sync:py": "python scripts/sync-ai-config.py"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
