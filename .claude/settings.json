@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/partial-claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test*)",
+      "Bash(npm run sync*)"
+    ],
+    "deny": []
+  }
+}

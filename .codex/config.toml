@@ -1,0 +1,3 @@
+# Cấu hình Codex CLI / IDE (File viết tay - Không bị ghi đè bởi sync script)
+model = "gpt-4o"
+temperature = 0.2
