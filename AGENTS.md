@@ -1,0 +1,61 @@
+# AGENTS.md - Tóm tắt Dự án cho Codex & Antigravity
+
+## 1. Giới thiệu Dự án
+**CivicLaw AI** là hệ thống trợ lý AI hỗ trợ công dân và cơ quan pháp lý, phát triển theo tôn chỉ minh bạch, chính xác và có thể kiểm chứng.
+
+---
+
+## 2. Quy chuẩn Cốt lõi: Spec-Driven Development (SDD)
+Mọi tính năng hoặc logic mới **BẮT BUỘC** tuân thủ luồng 5 bước:
+`spec -> plan -> tasks -> tests -> code`
+
+* **Cấu trúc đóng gói (`specs/NNN-<tên-tính-năng>/`):**
+  - `spec.md`: Cái gì & Vì sao & Clarify (không đoán mò) & BDD criteria (Given-When-Then).
+  - `plan.md`: Thế nào (Kiến trúc, Data models, Luồng dữ liệu).
+  - `tasks.md`: Chia nhỏ việc (`- [ ] t1`), chỉ review và test pass mới tích (`- [x]`).
+  - `tests/<tên>.test.ts`: Viết kiểm thử trước khi viết mã (TDD).
+* **Nguyên tắc vàng:** *"5 phút viết spec thay vì 5 ngày ngồi sửa"*. Tuyệt đối không sửa spec để hợp thức hóa code sai.
+
+---
+
+## 3. Triết lý Lập trình Tối giản: Ponytail (The 7-Rung Ladder)
+> *"The best code is the code you never wrote."*  
+> Code sinh ra phải phục vụ Spec, tối giản tối đa để giảm thiểu nợ kỹ thuật. Codex và Antigravity **BẮT BUỘC** dừng lại ở bậc đầu tiên thỏa mãn:
+
+1. **YAGNI:** Tính năng có cần lúc này không? Không đoán mò nhu cầu tương lai.
+2. **Reuse:** Codebase đã có helper/util tương tự chưa? Ưu tiên tái sử dụng.
+3. **Stdlib:** Tận dụng tối đa API/methods có sẵn của TypeScript/JavaScript và Node.js.
+4. **Platform Native:** Dùng HTML5/CSS, OS primitives, hoặc DB constraints thay vì custom JS.
+5. **Installed Dependencies:** Chỉ dùng thư viện trong `package.json`. Không cài thêm package mới.
+6. **One-liner:** Viết 1 dòng ngắn gọn nếu rõ nghĩa, dễ đọc.
+7. **Minimum Viable Code:** Chỉ viết lượng code vừa đủ để pass test theo spec.
+
+* **Sửa bug:** Sửa nguyên nhân gốc (root cause) ở hàm dùng chung, không vá tại callers.
+* **Red Lines:** Không bao giờ cắt giảm validation, xử lý lỗi, bảo mật và an toàn dữ liệu.
+
+---
+
+## 4. Kiến trúc Cấu hình AI: 1 Bản Gốc - 2 Bản Sinh
+- **Bản gốc (Master Source of Truth):** Thư mục `.claude/`. Mọi chỉnh sửa về skills, rules, agents **chỉ thực hiện ở đây**.
+- **Bản tự sinh (Auto-generated):**
+  - `.agents/skills/`: Cho Codex + Antigravity.
+  - `.agents/rules/`: Cho Antigravity.
+  - `.codex/agents/`: Cho Codex.
+  - `.codex/config.toml`: Cấu hình riêng cho Codex (viết tay, không bị ghi đè).
+- **Đồng bộ:** Sau khi sửa `.claude/`, chạy `npm run sync` (hoặc `python3 scripts/sync-ai-config.py`). Không sửa tay trong thư mục tự sinh.
+
+---
+
+## 5. Lưu ý Vận hành Quan trọng (Gotchas)
+1. **Mở đúng thư mục gốc:** Luôn mở IDE/terminal tại thư mục gốc dự án để không mất gốc `AGENTS.md`.
+2. **Trust Codex:** Đảm bảo dự án được trust trong `~/.codex/config.toml` để nạp `.codex/`.
+3. **Vị trí Skills:** Skills của Codex nằm tại `.agents/skills/`, không nằm trong `.codex/skills/`.
+4. **Chuẩn thư mục:** Luôn dùng `.agents/` (số nhiều).
+5. **Dọn dẹp:** Bản backup cũ tại `tmp/ai-config-backup-2026-11-11/` có thể xóa khi ổn định.
+
+---
+
+## 6. Lệnh thường dùng
+* Chạy kiểm thử: `npm test`
+* Kiểm thử liên tục: `npm run test:watch`
+* Đồng bộ cấu hình AI: `npm run sync`
