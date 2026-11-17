@@ -75,12 +75,46 @@ Toàn bộ dữ liệu được tải từ **Cổng thông tin điện tử Chí
 
 ---
 
-## 4. Định Hướng Kiến Trúc & Công Nghệ (Tech Stack Options)
+## 4. Định Hướng Kiến Trúc Đa Nền Tảng (Multi-Client Architecture)
 
-* **Cơ sở dữ liệu cốt lõi (Cố định):** **PostgreSQL 17 + `pgvector`** (chạy Docker). Lưu trữ hợp nhất dữ liệu quan hệ (văn bản, hiệu lực, lịch sử chat) và vector embedding.
-* **Mô hình AI:** **Google Gemini API** (`gemini-2.5-flash` + `gemini-embedding-001`) — Chi phí 0đ, context 1M tokens, tiếng Việt xuất sắc.
-* **Backend:** Lựa chọn giữa **Node.js/TypeScript** (thống nhất với repo hiện tại) hoặc **Python/FastAPI** (mạnh về parse PDF).
-* **Frontend:** **Next.js / React + Tailwind CSS** (giao diện chat hiện đại, hỗ trợ streaming).
+Hệ thống được thiết kế theo mô hình **Central Headless Backend** phục vụ đồng thời cho 2 ứng dụng chuyên biệt:
+
+```mermaid
+flowchart TD
+    subgraph CLIENTS ["TẦNG GIAO DIỆN (CLIENT APPLICATIONS)"]
+        WEB_ADMIN["WEB ADMIN (Dành cho Quản trị viên)\n- Framework: Next.js + Tailwind CSS + Shadcn UI\n- Nhiệm vụ: Nạp văn bản luật (PDF/DOCX), quản lý hiệu lực, giám sát chunking & vector, xem dashboard thống kê"]
+        MOBILE_APP["MOBILE APP (Dành cho Công dân / User)\n- Framework: React Native (Expo) + TypeScript\n- Ưu thế Gen AI: Vercel AI SDK, Google Gen AI SDK, streaming SSE mượt mà\n- Tính năng: Tra cứu phạt giao thông, hỏi đáp có trích dẫn, chụp biên bản (Camera OCR), quét hợp đồng rà soát rủi ro"]
+    end
+
+    subgraph BACKEND ["TẦNG LÕI & TRÍ TUỆ NHÂN TẠO (CENTRAL AI BACKEND)"]
+        API["Central Backend API (TypeScript / Fastify / Node.js)\n- Cung cấp REST API & Server-Sent Events (SSE) Streaming chung"]
+        DB[("Cơ sở dữ liệu: PostgreSQL 17 + pgvector (Docker)\n- Lưu trữ hợp nhất: Dữ liệu quan hệ, lịch sử chat & vector embedding")]
+        LLM["Mô hình AI: Google Gemini API (gemini-2.5-flash + gemini-embedding-001)\n- Chi phí 0đ, context 1M tokens, xử lý tiếng Việt pháp luật vượt trội"]
+        
+        API <--> DB
+        API <--> LLM
+    end
+
+    WEB_ADMIN -->|Quản trị dữ liệu & cấu hình RAG| API
+    MOBILE_APP -->|Truy vấn tìm kiếm & nhận streaming phản hồi| API
+```
+
+### 4.1. Web Admin Portal (Dành cho Quản trị viên)
+* **Framework đề xuất:** **Next.js (React) + Tailwind CSS + Shadcn UI**.
+* **Lý do lựa chọn:**
+  * Thao tác nạp các tập văn bản luật dài hàng trăm trang, kiểm tra các đoạn phân đoạn (chunking), duyệt ngày hết hiệu lực và xem biểu đồ thống kê **bắt buộc phải thực hiện trên máy tính (Desktop Web)** với chuột và bàn phím.
+  * **Shadcn UI** cung cấp sẵn các bộ UI components tối ưu cho Admin: Bảng dữ liệu (`DataTable`), Hộp thoại (`Modals`), Vùng kéo thả file (`Dropzone`), Tabs quản lý trạng thái.
+
+### 4.2. Mobile App (Dành cho Công dân / End-User)
+* **Framework đề xuất:** **React Native (Expo) + TypeScript**.
+* **Lý do lựa chọn (Ưu tiên hỗ trợ Gen AI tốt nhất):**
+  * **Hệ sinh thái Gen AI vượt trội:** Tận dụng trực tiếp các SDK AI hiện đại nhất của JavaScript/TypeScript (`@ai-sdk/react` của Vercel, `@google/genai`). Hook `useChat` hỗ trợ nhận luồng chữ chạy (Streaming qua SSE) mượt mà không làm đơ giao diện điện thoại.
+  * **Tận dụng phần cứng thiết bị:** Hỗ trợ `expo-camera` để chụp ảnh biên bản vi phạm giao thông, `expo-document-picker` để chọn file PDF hợp đồng, và nhận diện giọng nói (Voice-to-Text) để hỏi luật rảnh tay khi đang đi đường.
+  * **Chia sẻ mã nguồn (Code Sharing):** Dùng chung 100% Type definitions (`LegalDocument`, `ChatMessage`, `AuditResult`) giữa Mobile App, Web Admin và Backend.
+
+### 4.3. Central AI Backend & Storage
+* **Nền tảng CSDL cốt lõi:** **PostgreSQL 17 + `pgvector`** (chạy Docker). 1 hệ CSDL duy nhất giải quyết trọn vẹn cả dữ liệu nghiệp vụ quan hệ lẫn vector embeddings, tránh phân mảnh hạ tầng.
+* **Mô hình AI:** **Google Gemini API** (`gemini-2.5-flash` + `gemini-embedding-001`) — Gói miễn phí hào phóng, tốc độ nhanh, ngữ cảnh 1M tokens tối ưu cho văn bản luật và hợp đồng dài.
 
 ---
 

@@ -12,6 +12,7 @@
   $$\text{spec} \longrightarrow \text{plan} \longrightarrow \text{tasks} \longrightarrow \text{tests} \longrightarrow \text{code}$$
 * **Triết lý Lập trình Tối giản (Ponytail):** Áp dụng chiếc thang 7 bậc YAGNI, triệt tiêu over-engineering, không sinh code thừa và bảo vệ ranh giới an toàn hệ thống.
 * **Kiểm thử TDD Tự động:** Tích hợp `Vitest` quét tự động các bộ test nghiệp vụ theo chuẩn BDD (*Given - When - Then*).
+* **Kiến Trúc Đa Nền Tảng (Web Admin + Mobile App User):** Web Admin (Next.js + Shadcn UI) nạp & quản lý văn bản luật; Mobile App (React Native Expo) hỗ trợ công dân tra cứu, voice chat, camera OCR và rà soát hợp đồng qua Central RAG Backend (PostgreSQL `pgvector` + Gemini API).
 
 ---
 
