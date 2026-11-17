@@ -1,4 +1,4 @@
-import { LegalChunk, LegalDocumentMetadata } from './types';
+import { LegalChunk, LegalDocumentMetadata } from './types.js';
 
 /**
  * Trích xuất nhãn văn bản chuẩn dùng trong chuỗi trích dẫn (full_reference)
@@ -71,7 +71,7 @@ export function parseLegalText(
 
   // 1. Tách văn bản thành từng Điều
   // Mẫu nhận diện: "Điều 6. Xử phạt..."
-  const articleRegex = /(?:^|\n)(Điều\s+\d+[\.:]?\s*[^\n]*)/g;
+  const articleRegex = /(?:^|\n)\s*(Điều\s+\d+[\.:]?\s*[^\n]*)/g;
   const articleMatches: { articleHeader: string; startIndex: number }[] = [];
 
   let match: RegExpExecArray | null;
@@ -102,7 +102,7 @@ export function parseLegalText(
     const articleBodyText = articleBodyLines.join('\n').trim();
 
     // 2. Kiểm tra xem Điều có chứa các Khoản không (ví dụ: "1.", "2.", "Khoản 1.")
-    const clauseRegex = /(?:^|\n)(?:(?:Khoản\s+)?(\d+)\.|\bKhoản\s+(\d+)[\.:]?)\s*([^\n]*)/gi;
+    const clauseRegex = /(?:^|\n)\s*(?:(?:Khoản\s+)?(\d+)\.|\bKhoản\s+(\d+)[\.:]?)\s*([^\n]*)/gi;
     const clauseMatches: { clauseNum: string; lineText: string; startIndex: number }[] = [];
 
     let cMatch: RegExpExecArray | null;
@@ -141,7 +141,7 @@ export function parseLegalText(
       const clauseLabel = `Khoản ${curClause.clauseNum}`;
 
       // 3. Kiểm tra xem Khoản có chứa các Điểm không (ví dụ: "a)", "b)", "c)")
-      const pointRegex = /(?:^|\n)([a-zđ])\)\s*([^\n]*)/gi;
+      const pointRegex = /(?:^|\n)\s*([a-zđ])\)\s*([^\n]*)/gi;
       const pointMatches: { pointLetter: string; startIndex: number }[] = [];
 
       let pMatch: RegExpExecArray | null;

@@ -8,4 +8,4 @@
 - [x] `t4: Cài đặt LegalHierarchyParser trong src/ingestion/parser.ts (bóc tách Chương-Điều-Khoản-Điểm kèm ngữ cảnh)` (Review: Bảo toàn ngữ cảnh)
 - [x] `t5: Cài đặt KeywordExtractor để bắt số tiền phạt và từ khóa chủ thể` (Review: Bắt đúng mức phạt và từ khóa xe)
 - [x] `t6: Chạy toàn bộ test suite và xác nhận 100% tests đều xanh` (Review: vitest run pass 100% trong 7ms)
-- [ ] `t7: Tải và lưu trữ văn bản luật gốc (PDF + HTML/Text bổ sung) vào data/raw/`
+- [x] `t7: Tải và lưu trữ văn bản luật gốc (PDF + HTML/Text bổ sung) vào data/raw/` (Review: Đã tải 5 bản PDF gốc mộc đỏ và 5 bản text chuẩn hóa; kiểm thử phân đoạn thành công 1.051 chunks cho Nghị định 168)

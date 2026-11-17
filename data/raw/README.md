@@ -19,4 +19,11 @@
 
 ## Chiến Lược Xử Lý 2 Nguồn Dữ Liệu
 1. **Bản PDF Gốc (`.pdf`):** Đóng vai trò là tài liệu pháp lý đối chứng nguyên bản (Evidence of Record), có thể cung cấp cho công dân tải về kiểm tra khi cần xem văn bản có mộc đỏ.
-2. **Bản Bổ Sung HTML/Text (`.txt`):** Lấy từ phần hiển thị toàn văn trên web của Cổng thông tin Chính phủ. Đây là nguồn dữ liệu chuẩn không bị lỗi OCR, không bị dính số trang/header rác, dùng trực tiếp cho bộ bóc tách `LegalHierarchyParser`.
+2. **Bản Bổ Sung HTML/Text (`.txt`):** Lấy từ phần hiển thị toàn văn trên web của Cổng thông tin Chính phủ / Công Báo. Đây là nguồn dữ liệu chuẩn không bị lỗi OCR, không bị dính số trang/header rác, dùng trực tiếp cho bộ bóc tách `LegalHierarchyParser`.
+
+---
+
+## Các Lệnh Quản Lý Dữ Liệu
+* Tải 5 file PDF gốc từ cổng Chính phủ: `npm run download:pdfs`
+* Tải và chuẩn hóa 5 bản text toàn văn: `npm run download:texts`
+* Chạy bóc tách cấu trúc 5 bộ luật ra processed JSON: `npm run ingest`

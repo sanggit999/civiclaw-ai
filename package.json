@@ -4,10 +4,14 @@
   "description": "CivicLaw AI - Spec-Driven Development Workflow",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "sync": "node scripts/sync-ai-config.mjs",
-    "sync:py": "python scripts/sync-ai-config.py"
+    "sync:py": "python scripts/sync-ai-config.py",
+    "download:pdfs": "node scripts/download-official-pdfs.mjs",
+    "download:texts": "node scripts/fetch-clean-text.mjs",
+    "ingest": "npm run build && node scripts/run-all-ingestion.mjs"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

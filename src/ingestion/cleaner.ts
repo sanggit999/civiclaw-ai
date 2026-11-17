@@ -9,6 +9,16 @@ export function cleanLegalText(rawText: string): string {
 
   let cleaned = rawText;
 
+  // 0. Giải mã các thực thể HTML (HTML entities)
+  cleaned = cleaned
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+
   // 1. Loại bỏ Quốc hiệu, Tiêu ngữ
   cleaned = cleaned.replace(
     /CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\s*[\r\n]+\s*Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/gi,
