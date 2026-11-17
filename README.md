@@ -60,21 +60,16 @@ civiclaw-ai/
 │   ├── sync-ai-config.py                # Script đồng bộ bằng Python chuẩn
 │   └── sync-ai-config.mjs               # Script đồng bộ bằng Node.js (npm run sync)
 │
-├── specs/                               # 📦 QUẢN LÝ TÍNH NĂNG ĐÓNG GÓI
+├── specs/                               # 📦 QUẢN LÝ TÍNH NĂNG ĐÓNG GÓI (SDD)
 │   ├── TEMPLATE/                        # Khung mẫu nhân bản tính năng mới
 │   │   ├── spec.md                      # [Cái gì & Vì sao & Clarify & BDD criteria]
 │   │   ├── plan.md                      # [Thế nào & Kiến trúc kỹ thuật]
 │   │   ├── tasks.md                     # [Chia nhỏ việc & Review mới tích]
 │   │   └── tests/feature.test.ts        # [Kiểm thử viết trước]
 │   │
-│   └── 001-coupon-discount/             # Module mẫu tham chiếu hoàn chỉnh
-│       ├── spec.md
-│       ├── plan.md
-│       ├── tasks.md
-│       └── tests/coupon.test.ts
+│   └── (Khởi tạo tính năng mới theo quy chuẩn specs/NNN-<tên-tính-năng>/)
 │
-└── src/                                 # 💻 MÃ NGUỒN THỰC THI
-    └── coupon.ts                        # Code chạy theo spec và pass test
+└── src/                                 # 💻 MÃ NGUỒN THỰC THI (Code chạy theo spec & tests)
 ```
 
 ---

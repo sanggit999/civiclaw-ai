@@ -5,16 +5,14 @@
 
 ## 2. Mô hình Dữ liệu & Interfaces (Types)
 ```typescript
-// Định nghĩa interface, input/output
+// Định nghĩa interface, input/output, cấu trúc dữ liệu cụ thể cho tính năng
 ```
 
 ## 3. Luồng xử lý (Data Flow / Algorithm)
-1. Nhận input và validate cơ bản.
-2. Kiểm tra điều kiện áp dụng trong database / memory.
-3. Tính toán kết quả theo công thức đã xác định trong `spec.md`.
-4. Trả về kết quả hoặc ném lỗi có cấu trúc.
+1. Nhận input và validate dữ liệu tại ranh giới (trust boundary).
+2. Xử lý logic nghiệp vụ chính theo yêu cầu.
+3. Trả về kết quả hoặc ném lỗi có cấu trúc rõ ràng.
 
 ## 4. Xử lý Lỗi & Edge Cases
-- Lỗi mã không tồn tại -> `COUPON_NOT_FOUND`
-- Lỗi mã hết hạn -> `COUPON_EXPIRED`
-- Lỗi đơn hàng chưa đạt giá trị tối thiểu -> `MINIMUM_ORDER_NOT_MET`
+- Trường hợp dữ liệu không hợp lệ -> Báo lỗi cụ thể (Validation Error).
+- Trường hợp không tìm thấy kết quả -> Xử lý an toàn (Not Found / Fallback).
