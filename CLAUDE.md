@@ -3,6 +3,11 @@
 ## 1. Giới thiệu Dự án
 **CivicLaw AI** là hệ thống trợ lý AI hỗ trợ công dân và cơ quan pháp lý, phát triển theo tôn chỉ minh bạch, chính xác và có thể kiểm chứng.
 
+### 📌 Lộ Trình 2 Giai Đoạn (Two-Phase Evolution)
+* **Giai đoạn 1 (Core Foundation - Grounded Legal Assistant):** Tập trung vào kho dữ liệu 5 bộ luật chính thống trên PostgreSQL `pgvector`, tìm kiếm Hybrid (`vector + tsvector`) và luồng hỏi đáp trích dẫn 100% nguồn luật (`specs/002` đến `specs/005`).
+* **Giai đoạn 2 (Agentic Evolution - AI Agent & Contract Auditor):** Nâng cấp thành AI Agent tự chủ với cơ chế Tool Calling, vòng lặp ReAct và rà soát hợp đồng cá nhân (`specs/006`).
+> **Nguyên tắc phân kỳ:** Bắt buộc hoàn thiện vững chắc Giai đoạn 1 trước khi mở rộng sang Giai đoạn 2. Không làm tắt.
+
 ---
 
 ## 2. Quy chuẩn Cốt lõi: Spec-Driven Development (SDD)

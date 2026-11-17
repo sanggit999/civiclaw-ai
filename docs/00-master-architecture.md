@@ -25,7 +25,50 @@ flowchart TD
 
 ---
 
-## 2. Kiến Trúc Kỹ Thuật Tổng Thể (System Architecture)
+## 2. Phân Kỳ Phát Triển 2 Giai Đoạn (Two-Phase Evolution Roadmap)
+
+Để kiểm soát rủi ro, bám sát triết lý **Ponytail (YAGNI & Minimum Viable Code)** và đảm bảo tính khả thi cao, dự án được phân định rạch ròi thành 2 giai đoạn:
+
+```mermaid
+flowchart LR
+    subgraph PHASE1 ["GIAI ĐOẠN 1: CORE FOUNDATION\n(Grounded Legal Assistant)"]
+        P1_1["Nạp 5 bộ luật chính thống\n(specs/002)"] --> P1_2["Hybrid Search Engine\n(pgvector + tsvector) (specs/003)"]
+        P1_2 --> P1_3["Q&A Trích dẫn Nguồn & Streaming\n(specs/004)"]
+        P1_3 --> P1_4["Chat Memory & Query Rewriter\n(specs/005)"]
+    end
+
+    subgraph PHASE2 ["GIAI ĐOẠN 2: AGENTIC EVOLUTION\n(Autonomous AI Agent & Contract Auditor)"]
+        P2_1["Rà soát Hợp đồng PDF/DOCX\n(specs/006)"]
+        P2_2["Agent Tool Calling & ReAct Loop\n(Function Calling)"]
+        P2_3["Hội thoại Tương tác Làm rõ\n(Interactive Clarification)"]
+    end
+
+    PHASE1 -->|Nền tảng RAG ổn định 100%| PHASE2
+```
+
+### 2.1. Giai đoạn 1: Core Foundation — Trợ Lý Tra Cứu Pháp Luật Có Căn Cứ
+* **Trọng tâm:** Xây dựng "móng nhà" vững chắc — tập trung 100% vào chất lượng dữ liệu sạch, tốc độ truy vấn và độ chính xác của trích dẫn.
+* **Phạm vi thực hiện:**
+  1. `specs/002-legal-data-ingestion/`: Pipeline bóc tách theo phân cấp `Chương -> Điều -> Khoản -> Điểm`.
+  2. `specs/003-hybrid-legal-search/`: Tìm kiếm kết hợp Vector Cosine + Full-Text Search + Lọc `is_active = true`.
+  3. `specs/004-legal-qa-citations/`: LLM System Prompt luật sư nghiêm cẩn, trích dẫn Điều/Khoản, Streaming SSE.
+  4. `specs/005-chat-session-memory/`: Bộ nhớ hội thoại và tự động viết lại câu hỏi nối tiếp.
+* **Tiêu chuẩn hoàn thành (Definition of Done - DoD Phase 1):**
+  * Công dân hỏi bất kỳ tình huống nào trong 4 lĩnh vực (Giao thông, Lao động, BHXH, Nhà ở), hệ thống trả lời trong $\le 2$ giây kèm chính xác Số hiệu văn bản, Điều, Khoản.
+  * Nếu câu hỏi ngoài phạm vi, AI từ chối trả lời ngay lập tức, không sinh ảo giác.
+
+### 2.2. Giai đoạn 2: Agentic Evolution — AI Agent Tự Chủ & Rà Soát Hợp Đồng
+* **Trọng tâm:** Nâng cấp từ "hệ thống hỏi đáp" lên "AI Agent có quyền năng hành động" (Autonomous Reasoning & Action).
+* **Phạm vi thực hiện:**
+  1. `specs/006-contract-auditor/`: Nhận file PDF/DOCX hợp đồng thuê nhà / thử việc, tự động bóc tách điều khoản và đối chiếu rủi ro 3 mức (Xanh - Vàng - Đỏ).
+  2. **Cơ chế Tool Calling (Function Calling):** Agent tự chủ quyết định khi nào cần tra cứu luật giao thông, khi nào cần tra cứu luật lao động, khi nào cần đặt câu hỏi làm rõ cho công dân.
+  3. **Vòng lặp ReAct (Reason + Act + Observe):** Cho phép giải quyết các vụ việc pháp lý phức tạp cần tổng hợp từ nhiều nguồn luật khác nhau.
+* **Tiêu chuẩn hoàn thành (Definition of Done - DoD Phase 2):**
+  * Tải hợp đồng cá nhân lên, Agent tự động xuất bảng đánh giá rủi ro từng điều khoản kèm đề xuất sửa đổi điều khoản an toàn cho công dân trước khi ký.
+
+---
+
+## 3. Kiến Trúc Kỹ Thuật Tổng Thể (System Architecture)
 
 Hệ thống được thiết kế theo kiến trúc **RAG 2 lớp (Hybrid Retrieval-Augmented Generation)** kết hợp giữa tìm kiếm ngữ nghĩa (Vector Search) và tìm kiếm từ khóa chính xác (Full-Text Search) trên nền tảng **PostgreSQL + `pgvector`**.
 
@@ -65,59 +108,52 @@ flowchart TB
 
 ---
 
-## 3. Thiết Kế Cơ Sở Dữ Liệu Cốt Lõi (Database Schema)
+## 4. Mô Hình Dữ Liệu Khái Niệm (Conceptual Data Entities)
 
-Hệ thống sử dụng PostgreSQL 17 với extension `pgvector` để quản lý đồng nhất cả dữ liệu quan hệ và vector:
+> [!NOTE]
+> Theo quy chuẩn **Spec-Driven Development (SDD)**, tài liệu Master chỉ định nghĩa **các thực thể nghiệp vụ và nhu cầu thông tin ở mức khái niệm (Conceptual Model)**. Thiết kế chi tiết cấu trúc bảng (Tables, Schema, DDL, Indexing) sẽ được thực hiện linh hoạt trong `plan.md` của từng tính năng cụ thể (`specs/NNN-xxx/`), tuyệt đối không ấn định cứng sớm (tránh bẫy Over-engineering & Premature Optimization).
 
-```sql
--- 1. Bật extension pgvector
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+Hệ thống quản lý 4 nhóm thực thể thông tin cốt lõi:
 
--- 2. Bảng quản lý văn bản quy phạm pháp luật
-CREATE TABLE legal_documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    doc_number VARCHAR(100) NOT NULL UNIQUE,       -- Ví dụ: '168/2024/NĐ-CP'
-    title TEXT NOT NULL,                           -- Tên đầy đủ của văn bản
-    domain VARCHAR(50) NOT NULL,                   -- 'TRAFFIC', 'LABOR', 'SOCIAL_INSURANCE', 'HOUSING'
-    issuer VARCHAR(150),                           -- Cơ quan ban hành (Chính phủ, Quốc hội)
-    issue_date DATE NOT NULL,                      -- Ngày ban hành
-    effective_date DATE NOT NULL,                  -- Ngày có hiệu lực
-    expiry_date DATE,                              -- Ngày hết hiệu lực (NULL nếu còn hiệu lực)
-    is_active BOOLEAN GENERATED ALWAYS AS (
-        expiry_date IS NULL OR expiry_date >= CURRENT_DATE
-    ) STORED,                                      -- Trạng thái hiệu lực tự động
-    source_url TEXT,                               -- Đường dẫn cổng thông tin chính phủ
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+```mermaid
+erDiagram
+    LEGAL_DOCUMENT ||--o{ LEGAL_CHUNK : "chứa các điều khoản"
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : "lưu các lượt trao đổi"
+    CONTRACT_DOCUMENT ||--o{ CONTRACT_CLAUSE : "bóc tách thành"
+    CONTRACT_CLAUSE ||--o{ AUDIT_FINDING : "được đối chiếu ra"
 
--- 3. Bảng phân đoạn điều khoản pháp lý (Chunks + Vectors)
-CREATE TABLE legal_chunks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    document_id UUID REFERENCES legal_documents(id) ON DELETE CASCADE,
-    chapter VARCHAR(100),                          -- Ví dụ: 'Chương II'
-    article VARCHAR(100) NOT NULL,                 -- Ví dụ: 'Điều 6'
-    clause VARCHAR(100),                           -- Ví dụ: 'Khoản 2'
-    point VARCHAR(10),                             -- Ví dụ: 'Điểm a'
-    full_reference TEXT NOT NULL,                  -- 'Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP'
-    content TEXT NOT NULL,                         -- Nội dung câu chữ chính thức của điều khoản
-    keywords TEXT[],                               -- Từ khóa nhận diện nhanh (ví dụ: ['nồng độ cồn', 'xe máy'])
-    embedding vector(768),                         -- Vector embedding (768 chiều cho Gemini, 1536 cho OpenAI)
-    search_vector tsvector GENERATED ALWAYS AS (
-        to_tsvector('simple', content || ' ' || full_reference)
-    ) STORED,                                      -- Chỉ mục tìm kiếm từ khóa chính xác
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    LEGAL_DOCUMENT {
+        string doc_number "Số hiệu văn bản (168/2024/NĐ-CP)"
+        string title "Tên đầy đủ của luật / nghị định"
+        string domain "Lĩnh vực (Giao thông, Lao động, BHXH, Nhà ở)"
+        date effective_date "Ngày bắt đầu có hiệu lực thi hành"
+        date expiry_date "Ngày hết hiệu lực (nếu có)"
+        boolean is_active "Trạng thái còn hiệu lực hay đã hết hiệu lực"
+    }
 
--- Chỉ mục tối ưu tốc độ tìm kiếm
-CREATE INDEX idx_legal_chunks_embedding ON legal_chunks USING hnsw (embedding vector_cosine_ops);
-CREATE INDEX idx_legal_chunks_search_vector ON legal_chunks USING gin (search_vector);
-CREATE INDEX idx_legal_documents_domain_active ON legal_documents(domain, is_active);
+    LEGAL_CHUNK {
+        string full_reference "Trích dẫn đầy đủ (Điểm a Khoản 2 Điều 6...)"
+        string hierarchy "Phân cấp (Chương, Điều, Khoản, Điểm)"
+        text content "Nội dung câu chữ chính thức của điều khoản"
+        vector embedding "Biểu diễn ngữ nghĩa phục vụ tìm kiếm vector"
+        string keywords "Từ khóa thực tế đời sống để tìm kiếm nhanh"
+    }
+
+    CHAT_SESSION {
+        uuid session_id "Mã định danh phiên hội thoại của công dân"
+        timestamp created_at "Thời điểm bắt đầu phiên"
+    }
+
+    CONTRACT_DOCUMENT {
+        string file_name "Tên file hợp đồng công dân tải lên"
+        string contract_type "Loại hợp đồng (Thuê nhà, Lao động)"
+        timestamp uploaded_at "Thời điểm tải lên"
+    }
 ```
 
 ---
 
-## 4. Phân Rã 5 Khối Logic Nghiệp Vụ Cốt Lõi (Business Logic Breakdown)
+## 5. Phân Rã 5 Khối Logic Nghiệp Vụ Cốt Lõi (Business Logic Breakdown)
 
 Toàn bộ hệ thống được phân rã thành 5 khối nghiệp vụ độc lập, tương ứng với lộ trình chuyển giao sang **Spec-Driven Development (`specs/NNN-xxx/`)**:
 
@@ -179,7 +215,23 @@ Dựa trên tài liệu đặc tả và nguyên tắc tối giản (The 7-Rung L
 
 ---
 
-## 6. Lộ Trình Triển Khai (Roadmap)
+## 6. Danh Mục Năng Lực Của AI Agent (Agent Tool Capabilities)
+
+Trong Giai đoạn 2, LLM không chỉ sinh văn bản thụ động mà hoạt động như một **Autonomous Legal Agent** được trang bị các năng lực hành động cụ thể:
+
+| Tên Năng Lực (Tool) | Mục Đích Nghiệp Vụ | Dữ Liệu Đầu Vào | Kết Quả Mong Đợi |
+| :--- | :--- | :--- | :--- |
+| **Tra cứu điều khoản luật** (`search_legal_rules`) | Tìm kiếm các quy định pháp luật liên quan tới hành vi hoặc câu hỏi của công dân. | Từ khóa, câu hỏi tình huống, khoanh vùng lĩnh vực (Giao thông, Lao động, BHXH, Nhà ở). | Danh sách các đoạn trích Điều/Khoản luật còn hiệu lực kèm trích dẫn. |
+| **Kiểm tra trạng thái hiệu lực** (`check_law_status`) | Xác minh một văn bản hoặc điều luật cụ thể hiện còn hiệu lực hay đã bị bãi bỏ/sửa đổi. | Số hiệu văn bản (NĐ 168/2024), số thứ tự Điều. | Trạng thái: Còn hiệu lực, Hết hiệu lực, hoặc Bị sửa đổi bởi văn bản nào. |
+| **Rà soát điều khoản hợp đồng** (`audit_contract_clause`) | Đối chiếu một điều khoản trong hợp đồng cá nhân với các quy định pháp luật hiện hành. | Nội dung điều khoản hợp đồng, loại hợp đồng (Thuê nhà, Lao động). | Đánh giá 3 mức (Hợp pháp, Bất lợi, Trái luật) kèm căn cứ pháp lý và gợi ý sửa đổi. |
+| **Hỏi lại để làm rõ tình tiết** (`ask_clarification`) | Đặt câu hỏi tương tác ngược lại cho công dân khi vụ việc còn thiếu dữ kiện pháp lý trọng yếu. | Câu hỏi làm rõ, khía cạnh pháp lý cần xác minh. | Thu nhận thông tin bổ sung từ công dân để hoàn tất suy luận. |
+
+> [!TIP]
+> Cấu trúc schema kỹ thuật cụ thể (Function calling parameters, types, JSON Schema) của từng tool sẽ được thiết kế chi tiết trong `plan.md` của Giai đoạn 2 (`specs/006-xxx/`), tuân thủ đúng quy chuẩn SDD.
+
+---
+
+## 7. Lộ Trình Triển Khai (Roadmap)
 
 ```mermaid
 gantt

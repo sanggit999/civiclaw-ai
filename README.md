@@ -15,6 +15,17 @@
 
 ---
 
+## 🗺️ Lộ Trình Phát Triển 2 Giai Đoạn (Two-Phase Evolution)
+
+Dự án được phân kỳ rạch ròi theo 2 giai đoạn phát triển:
+
+| Giai đoạn | Mục tiêu & Bản chất | Các Module SDD tương ứng | Trạng thái |
+| :--- | :--- | :--- | :---: |
+| **Giai đoạn 1: Core Foundation**<br>*(Grounded Legal Assistant)* | Xây dựng kho dữ liệu 5 bộ luật chính thống, tìm kiếm kết hợp Hybrid (`pgvector` + `tsvector`) và luồng hỏi đáp có căn cứ trích dẫn nguồn 100%, hỗ trợ streaming. | • `specs/002-legal-data-ingestion/`<br>• `specs/003-hybrid-legal-search/`<br>• `specs/004-legal-qa-citations/`<br>• `specs/005-chat-session-memory/` | 🚧 **Đang thực hiện** |
+| **Giai đoạn 2: Agentic Evolution**<br>*(Autonomous AI Agent & Contract Auditor)* | Nâng cấp thành AI Agent tự chủ với hộp công cụ (Tool Calling / Function Calling), vòng lặp suy luận ReAct và hệ thống rà soát rủi ro hợp đồng cá nhân PDF/DOCX (3 mức cảnh báo). | • `specs/006-contract-auditor/`<br>• Agent Tool Calling & ReAct Loop<br>• Tự động đặt câu hỏi làm rõ (Clarification) | ⏳ **Kế hoạch tiếp theo** |
+
+---
+
 ## 📂 Cấu Trúc Thư Mục Chuẩn
 
 ```
