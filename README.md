@@ -37,6 +37,10 @@ civiclaw-ai/
 ├── package.json                         # Dependencies & Scripts điều khiển
 ├── vitest.config.ts                     # Cấu hình kiểm thử tự động
 │
+├── docs/                                # 📖 TÀI LIỆU ĐẶC TẢ SẢN PHẨM (BA PERSPECTIVE)
+│   ├── PRD.md                           # Tổng quan bài toán, mục tiêu, 2 giai đoạn phát triển
+│   └── references/                      # Văn bản đặc tả gốc lưu trữ
+│
 ├── .claude/                             # 🌟 BẢN GỐC (MASTER SOURCE OF TRUTH)
 │   ├── rules/                           # Quy tắc dự án (SDD, Ponytail, Gotchas)
 │   ├── skills/                          # Kỹ năng mở rộng của Agent
