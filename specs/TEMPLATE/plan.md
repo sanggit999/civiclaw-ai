@@ -22,9 +22,12 @@ flowchart LR
 -- DDL Schema nếu có
 ```
 
-## 3. Ràng buộc & Ranh giới Bất biến (Invariants & Fallback Boundaries)
+## 3. Ràng buộc & Ranh giới Bất biến (Invariants, Red Lines & Anti-Hardcode)
 * **Ràng buộc an toàn (Invariants):** Điều kiện luôn phải đúng (Ví dụ: Score nằm trong [0.0, 1.0], không bao giờ nạp data rác vào DB).
 * **Ranh giới sự cố (Fallback Boundaries):** Khi component phụ thuộc chết hoặc dữ liệu thiếu thì hệ thống phản ứng như thế nào để đảm bảo tính an toàn.
+* **Chính sách Không Hardcode (Anti-Hardcode Boundaries):**
+  - *Tuyệt đối cấm:* Hardcode API keys, DB URL, password, path tuyệt đối, hoặc số ma thuật.
+  - *Tạm thời cho phép:* Mock data trong `tests/fixtures/` hoặc wireframe mock-up (phải gắn cờ `// TODO(mock)`).
 
 ---
 
@@ -40,6 +43,17 @@ export interface FeatureInput {
 export interface FeatureOutput {
   // ...
 }
+
+// Cấu hình linh hoạt - Tránh hardcode số ma thuật
+export interface FeatureConfig {
+  readonly threshold?: number;
+  readonly batchSize?: number;
+}
+
+export const DEFAULT_FEATURE_CONFIG: Required<FeatureConfig> = {
+  threshold: 0.75,
+  batchSize: 50,
+};
 ```
 
 ## 2. Danh mục Hàm & Chữ ký (Signatures)

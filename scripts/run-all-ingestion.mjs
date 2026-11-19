@@ -7,7 +7,7 @@ const LAWS_METADATA = [
   {
     docNumber: '168/2024/NĐ-CP',
     title: 'Nghị định 168/2024/NĐ-CP xử phạt vi phạm giao thông đường bộ và trừ điểm GPLX',
-    domain: 'traffic',
+    domain: 'TRAFFIC',
     effectiveDate: '2025-01-01',
     sourceUrl: 'https://vanban.chinhphu.vn/?pageid=27160&docid=212167',
     rawFile: '168_2024_ND-CP.txt',
@@ -16,7 +16,7 @@ const LAWS_METADATA = [
   {
     docNumber: '36/2024/QH15',
     title: 'Luật Trật tự, an toàn giao thông đường bộ 2024',
-    domain: 'traffic',
+    domain: 'TRAFFIC',
     effectiveDate: '2025-01-01',
     sourceUrl: 'https://vanban.chinhphu.vn/?pageid=27160&docid=211194',
     rawFile: '36_2024_QH15.txt',
@@ -25,7 +25,7 @@ const LAWS_METADATA = [
   {
     docNumber: '45/2019/QH14',
     title: 'Bộ luật Lao động 2019',
-    domain: 'labor',
+    domain: 'LABOR',
     effectiveDate: '2021-01-01',
     sourceUrl: 'https://vanban.chinhphu.vn/?pageid=27160&docid=198540',
     rawFile: '45_2019_QH14.txt',
@@ -34,7 +34,7 @@ const LAWS_METADATA = [
   {
     docNumber: '41/2024/QH15',
     title: 'Luật Bảo hiểm xã hội 2024',
-    domain: 'insurance',
+    domain: 'SOCIAL_INSURANCE',
     effectiveDate: '2025-07-01',
     sourceUrl: 'https://vanban.chinhphu.vn/?pageid=27160&docid=211199',
     rawFile: '41_2024_QH15.txt',
@@ -43,7 +43,7 @@ const LAWS_METADATA = [
   {
     docNumber: '27/2023/QH15',
     title: 'Luật Nhà ở 2023',
-    domain: 'housing',
+    domain: 'HOUSING',
     effectiveDate: '2024-08-01',
     sourceUrl: 'https://vanban.chinhphu.vn/?pageid=27160&docid=209627',
     rawFile: '27_2023_QH15.txt',

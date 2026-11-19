@@ -11,10 +11,16 @@
     "sync:py": "python scripts/sync-ai-config.py",
     "download:pdfs": "node scripts/download-official-pdfs.mjs",
     "download:texts": "node scripts/fetch-clean-text.mjs",
-    "ingest": "npm run build && node scripts/run-all-ingestion.mjs"
+    "ingest": "npm run build && node scripts/run-all-ingestion.mjs",
+    "upload:supabase": "node scripts/upload-chunks-to-supabase.mjs"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "dotenv": "^18.0.10"
   }
 }

@@ -9,8 +9,9 @@ export function cleanLegalText(rawText: string): string {
 
   let cleaned = rawText;
 
-  // 0. Giải mã các thực thể HTML (HTML entities)
+  // 0. Giải mã các thực thể HTML (HTML entities) và loại bỏ ký tự vô hình (Zero-width chars, BOM)
   cleaned = cleaned
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // Khử zero-width space gây lỗi nhận diện Điều/Khoản
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
     .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&nbsp;/g, ' ')

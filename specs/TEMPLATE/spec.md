@@ -23,6 +23,10 @@
 +-------------------------------------------------------------------+
 ```
 
+> [!NOTE]
+> **Quy định về dữ liệu Mock-up:**
+> Dữ liệu hiển thị trong Mock-up là giả lập tạm thời phục vụ đặc tả UX. Tuyệt đối không chuyển dữ liệu mock-up này thành chuỗi/logic fix cứng trong mã nguồn.
+
 ## 4. Làm rõ & Giả định (Clarify - Cấm đoán mò)
 > [!IMPORTANT]
 > Chỉ bắt đầu lập trình khi mọi nghi vấn nghiệp vụ đã được xác nhận.
@@ -43,3 +47,8 @@
 * **Given (Cho trước):** [Trạng thái ban đầu]
 * **When (Khi):** [Dữ liệu thiếu / Lỗi kết nối / Ngoài phạm vi]
 * **Then (Thì):** [Phản hồi an toàn, kích hoạt fallback và không làm sập hệ thống]
+
+### Kịch bản 3: [Cấu hình Linh hoạt — Không Hardcode]
+* **Given (Cho trước):** Module được khởi tạo với cấu hình tùy biến (custom options/config).
+* **When (Khi):** Module thực thi nghiệp vụ.
+* **Then (Thì):** Hệ thống tôn trọng cấu hình truyền vào thay vì sử dụng giá trị fix cứng trong mã nguồn.

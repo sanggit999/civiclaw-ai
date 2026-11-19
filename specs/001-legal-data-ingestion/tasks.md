@@ -24,10 +24,10 @@
 
 ---
 
-### Lát cắt 3: Bóc Tách Toàn Diện 4.501 Chunks Trên 5 Bộ Luật Thực Tế (Full Scale Real Data Slice)
-*Mục tiêu: Tải 5 file PDF gốc mộc đỏ, nạp 5 văn bản toàn văn thực tế và xuất bản 4.501 chunks JSON chuẩn hóa.*
+### Lát cắt 3: Bóc Tách Toàn Diện 4.715 Chunks Trên 5 Bộ Luật Thực Tế (Full Scale Real Data Slice)
+*Mục tiêu: Tải 5 file PDF gốc mộc đỏ, nạp 5 văn bản toàn văn thực tế và xuất bản 4.715 chunks JSON chuẩn hóa.*
 - [x] `t3.1: Viết Integration Test specs/001-legal-data-ingestion/tests/real-data.test.ts kiểm chứng Điều 6 Khoản 2 Điểm a`
 - [x] `t3.2: Tải 5 file PDF gốc vào data/raw/ và 5 file text toàn văn từ Công Báo`
-- [x] `t3.3: Xây dựng scripts/run-all-ingestion.mjs bóc tách thành công 4.501 chunks vào data/processed/`
+- [x] `t3.3: Xây dựng scripts/run-all-ingestion.mjs bóc tách thành công 4.715 chunks vào data/processed/`
 - [x] `t3.4: Chạy toàn bộ test suite dự án và đối soát lại toàn bộ spec.md`
 *👉 Lệnh kiểm tra Lát 3:* `npx vitest run specs/001-legal-data-ingestion/tests/real-data.test.ts`

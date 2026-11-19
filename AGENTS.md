@@ -11,15 +11,21 @@
 ---
 
 ## 2. Quy chuẩn Cốt lõi: Spec-Driven Development (SDD)
-Mọi tính năng hoặc logic mới **BẮT BUỘC** tuân thủ luồng 5 bước:
-`spec -> plan -> tasks -> tests -> code`
+Mọi tính năng hoặc logic mới **BẮT BUỘC** tuân thủ luồng:
+`spec -> plan -> tasks -> tests & code -> review`
 
 * **Cấu trúc đóng gói (`specs/NNN-<tên-tính-năng>/`):**
   - `spec.md`: Cái gì & Vì sao & Clarify (không đoán mò) & BDD criteria (Given-When-Then).
-  - `plan.md`: Thế nào (Kiến trúc, Data models, Luồng dữ liệu).
-  - `tasks.md`: Chia nhỏ việc (`- [ ] t1`), chỉ review và test pass mới tích (`- [x]`).
+  - `plan.md`: Thế nào (Kiến trúc, Data models, Luồng dữ liệu, Config Interfaces).
+  - `tasks.md`: Chia nhỏ việc theo lát cắt dọc (`- [ ] t1`), chỉ review và test pass mới tích (`- [x]`).
   - `tests/<tên>.test.ts`: Viết kiểm thử trước khi viết mã (TDD).
 * **Nguyên tắc vàng:** *"5 phút viết spec thay vì 5 ngày ngồi sửa"*. Tuyệt đối không sửa spec để hợp thức hóa code sai.
+* **Chốt chặn Code Review bắt buộc (Code Review Gate):**
+  - Khi hoàn thành tất cả tasks của spec và `npm test` đã XANH:
+    - **Antigravity:** Chạy `/code-review` (zero-setup, có sẵn trong repo tại `.agents/skills/code-review/`) hoặc `/requesting-code-review` (nâng cao, nếu máy đã cài plugin Superpowers).
+    - **Claude Code:** Chạy `/code-review` (tự động nạp từ `.claude/commands/code-review.md` trong repo, không cần plugin).
+    - **Codex:** Chạy `/review` (lệnh built-in của Codex CLI) hoặc dispatch `@code-reviewer` (tự sinh tại `.codex/agents/code-reviewer.toml`).
+  - Chỉ được đóng spec và merge khi reviewer xác nhận **PASS** và xử lý triệt để các phát hiện Critical/Important.
 
 ---
 
@@ -37,6 +43,9 @@ Mọi tính năng hoặc logic mới **BẮT BUỘC** tuân thủ luồng 5 bư�
 
 * **Sửa bug:** Sửa nguyên nhân gốc (root cause) ở hàm dùng chung, không vá tại callers.
 * **Red Lines:** Không bao giờ cắt giảm validation, xử lý lỗi, bảo mật và an toàn dữ liệu.
+* **Chính sách Không Hardcode (Anti-Hardcode):**
+  - **Tuyệt đối cấm:** API keys, secrets, DB URLs, đường dẫn tuyệt đối máy cá nhân, số ma thuật/chuỗi ma thuật trong code production `src/` (bắt buộc dùng `.env` hoặc Config/Options object).
+  - **Tạm thời cho phép (cô lập):** Dữ liệu mẫu minh họa trong Mock-up (`spec.md`) và Test Fixtures/Mocks trong thư mục `tests/` để phục vụ test offline độc lập. Tuyệt đối không để lọt vào mã nguồn production.
 
 ---
 
