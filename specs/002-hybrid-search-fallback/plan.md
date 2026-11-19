@@ -1,38 +1,77 @@
-# Kế Hoạch Kỹ Thuật (Plan): 002 - Hybrid Search, Fallback Guard & Knowledge Gap Queue
+# Bước 2 & Bước 3: Kế Hoạch Kỹ Thuật — 002: Legal Search & Fallback Guard
 
-## 1. Kiến Trúc Hệ Thống (Architecture)
+---
+
+# PHẦN A: BƯỚC 2 — KIẾN TRÚC (SYSTEM ARCHITECTURE)
+
+## 1. Hợp đồng giữa các Component (Component Contracts)
 
 ```mermaid
-flowchart TD
-    UserQuery["Truy vấn người dùng\n('Chuyển làn không xi nhan phạt mấy?')"]
-    --> SearchEngine["LegalSearchEngine\n(Bộ máy đối soát từ khóa & ngữ cảnh)"]
+flowchart LR
+    subgraph UI ["Client Layer (Mobile App / Web Admin)"]
+        ClientApp["Mobile/Web Client"]
+    end
 
-    SearchEngine --> ChunksRepo[("Kho Legal Chunks\n(4.501 chunks từ data/processed/)")]
-    ChunksRepo --> ScoreCalc["Tính điểm tin cậy (Confidence Score 0.0 - 1.0)"]
+    subgraph SearchSubsystem ["Search & Retrieval Subsystem"]
+        Engine["LegalSearchEngine"]
+        Guard["ConfidenceGuard (Threshold 0.65)"]
+        GapQueue["KnowledgeGapQueue"]
+    end
 
-    ScoreCalc --> Guard{"Confidence Score >= 0.65?"}
+    subgraph StorageSubsystem ["Storage & Repository Layer"]
+        ChunksRepo[("Legal Chunks Repository\n(4.501 Chunks JSON / DB)")]
+        GapsDB[("Unresolved Queries Store\n(Knowledge Gaps)")]
+    end
 
-    Guard -- "Có (Đủ tin cậy)" --> SuccessResponse["Trả về chunks + Trích dẫn chính thức\n(Điểm a Khoản 2 Điều 6 NĐ 168)"]
-    
-    Guard -- "Không (Thiếu luật / Ngoài phạm vi)" --> FallbackHandler["Honest Fallback Handler\n(Chặn suy đoán ảo giác)"]
+    ClientApp -->|SearchQuery| Engine
+    Engine -->|Fetch Chunks| ChunksRepo
+    Engine -->|Calculate Score| Guard
+    Guard -- "Score >= 0.65" -->|SearchResponse (isFound: true)| ClientApp
+    Guard -- "Score < 0.65" -->|Log Unresolved| GapQueue
+    GapQueue -->|Save & Increment Hit| GapsDB
+    Guard -- "Score < 0.65" -->|SearchResponse (isFound: false)| ClientApp
+```
 
-    FallbackHandler --> GapQueue[("Knowledge Gap Queue\n(Hàng đợi unresolved_queries)")]
-    GapQueue --> DeDup{"Đã có câu tương tự chưa?"}
-    DeDup -- "Có" --> IncrementHit["Tăng hit_count += 1"]
-    DeDup -- "Chưa" --> InsertGap["Tạo bản ghi mới (status: unreviewed)"]
+### Hợp đồng giao tiếp (Contracts):
+* **`ClientApp -> Engine`:** Gửi `SearchQuery { text, domain?, limit?, confidenceThreshold? }`.
+* **`Engine -> ClientApp`:** Trả về `SearchResponse { isFound, topScore, results, message, loggedToKnowledgeGap }`.
+* **`Engine -> GapQueue`:** Khi `topScore < threshold`, gọi `logQuery(rawText)`.
 
-    FallbackHandler --> HonestMsg["Trả về thông báo minh bạch cho người dùng\n('Chưa có trong 5 bộ luật, đã ghi nhận để cập nhật')"]
+---
+
+## 2. Mô hình Dữ liệu (Data Models)
+
+### Bảng Cơ sở dữ liệu: `unresolved_queries` (Knowledge Gaps)
+```sql
+CREATE TABLE IF NOT EXISTS unresolved_queries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    query_text TEXT NOT NULL,
+    normalized_query TEXT NOT NULL,
+    domain_guess VARCHAR(30) DEFAULT 'OTHER', -- 'TRAFFIC' | 'LABOR' | 'SOCIAL_INSURANCE' | 'HOUSING' | 'OTHER'
+    hit_count INT DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'unreviewed', -- 'unreviewed' | 'resolved' | 'ignored'
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_unresolved_queries_hit ON unresolved_queries (hit_count DESC);
+CREATE INDEX IF NOT EXISTS idx_unresolved_queries_status ON unresolved_queries (status);
 ```
 
 ---
 
-## 2. Mô Hình Dữ Liệu (Data Models)
+## 3. Ràng buộc & Ranh giới Bất biến (Invariants & Fallback Boundaries)
 
-### `src/search/types.ts`
+* **Ràng buộc bất biến 1 (No Self-Generated Law):** Không bao giờ cho phép AI tự suy diễn mức phạt hoặc điều luật để lưu vào `legal_chunks`. Dữ liệu luật chỉ được nạp từ file có mộc đỏ hoặc admin phê duyệt.
+* **Ràng buộc bất biến 2 (Confidence Threshold Invariant):** Ngưỡng tin cậy $T = 0.65$. Nếu $\max(Score) < T$, kết quả trả về bắt buộc phải có `isFound = false` và `results = []`.
+* **Ranh giới sự cố (Fallback Boundary):** Khi kho dữ liệu không có câu trả lời, hệ thống không được ném Exception hay sập app, mà phải trả về phản hồi lịch sự, an toàn và ghi nhận log phục vụ nâng cấp.
 
+---
+
+# PHẦN B: BƯỚC 3 — PROGRAM DESIGN (THIẾT KẾ CHI TIẾT MÃ NGUỒN)
+
+## 1. Kiểu dữ liệu & Interfaces: `src/search/types.ts`
 ```typescript
-import { LegalChunk, LegalDomain } from '../ingestion/types';
-
 export interface SearchQuery {
   text: string;
   domain?: LegalDomain;
@@ -53,13 +92,14 @@ export interface SearchResponse {
   loggedToKnowledgeGap: boolean;
 }
 
+export type ExtendedDomain = LegalDomain | 'OTHER';
 export type GapStatus = 'unreviewed' | 'resolved' | 'ignored';
 
 export interface UnresolvedQuery {
   id: string;
   queryText: string;
   normalizedQuery: string;
-  domainGuess: LegalDomain | 'other';
+  domainGuess: ExtendedDomain;
   hitCount: number;
   status: GapStatus;
   createdAt: string;
@@ -69,22 +109,48 @@ export interface UnresolvedQuery {
 
 ---
 
-## 3. Thuật Toán Xử Lý
+## 2. Danh mục Hàm & Chữ ký (Signatures)
 
-### A. Bộ Máy Tìm Kiếm Từ Khóa & Ngữ Cảnh (Lexical + Keyword Scorer)
-1. Chuẩn hóa câu hỏi: bỏ dấu câu, chuyển chữ thường (`tiền phạt`, `xe ô tô`, `chuyển làn`).
-2. Khớp từ khóa chủ thể và mức phạt với danh mục `keywords` trong từng chunk.
-3. Chấm điểm kết hợp:
-   - Điểm khớp từ khóa chuyên ngành (`keywords`): Trọng số 50%.
-   - Điểm bao phủ từ tố (token overlap / Jaccard): Trọng số 50%.
-   - Điểm tổng hợp được chuẩn hóa về thang `[0.0, 1.0]`.
+### Trong `src/search/engine.ts`:
+* `class LegalSearchEngine`:
+  - `constructor(chunks: LegalChunk[], gapQueue?: KnowledgeGapQueue)`
+  - `search(query: SearchQuery): SearchResponse`
+    - **Input:** `query` chứa chuỗi tìm kiếm từ người dùng.
+    - **Output:** `SearchResponse` cam kết theo hợp đồng.
+  - `private scoreChunk(queryWords: string[], queryText: string, chunk: LegalChunk): number`
+    - Tính điểm tin cậy tổng hợp dựa trên từ khóa pháp lý (40%), độ phủ từ tố (50%) và cụm từ chính xác (10%).
 
-### B. Bộ Chặn Ảo Giác (Confidence Guard)
-* Nếu `topScore < confidenceThreshold` (0.65):
-  - Kích hoạt `KnowledgeGapQueue.logQuery()`.
-  - Không trả về chunk nào gây nhiễu, thông báo rõ ràng cho người dùng.
+### Trong `src/search/gap-queue.ts`:
+* `class KnowledgeGapQueue`:
+  - `logQuery(rawQuery: string): UnresolvedQuery`: Khử trùng lặp qua Jaccard similarity (ngưỡng 0.6), tự động đoán domain và tăng `hitCount`.
+  - `getAll(): UnresolvedQuery[]`: Trả về danh sách khoảng trống tri thức sắp xếp theo `hitCount` giảm dần.
+  - `updateStatus(id: string, status: GapStatus): boolean`
 
-### C. Khử Trùng Lặp Trong Knowledge Gap Queue (De-duplication)
-* Chuẩn hóa văn bản bằng cách lọc stop-words tiếng Việt cơ bản.
-* So sánh độ tương tự Jaccard của bộ từ vựng (`bag-of-words`).
-* Nếu độ tương tự giữa câu mới và câu đã có >= 0.7: coi là cùng một nhu cầu tra cứu và tăng `hitCount`.
+---
+
+## 3. Sơ đồ Luồng Gọi Hàm (Call Graph)
+
+```mermaid
+flowchart TD
+    User["Caller (API / Test)"] --> Search["LegalSearchEngine.search(query)"]
+    
+    Search --> Norm["normalizeQueryText(query.text)"]
+    Search --> Filter["Candidate Chunks (Filter by domain if present)"]
+    
+    Filter --> Loop["Loop: scoreChunk() for each candidate"]
+    Loop --> KwCheck["1. Check chunk.keywords matching"]
+    Loop --> WordCheck["2. Check word coverage ratio"]
+    Loop --> PhraseCheck["3. Check exact phrase bonus"]
+    
+    Loop --> Sort["Sort candidates by score DESC"]
+    Sort --> GuardCheck{"topScore >= threshold (0.65)?"}
+    
+    GuardCheck -- "Đạt chuẩn" --> ReturnSuccess["Return SearchResponse(isFound: true, results)"]
+    
+    GuardCheck -- "Dưới ngưỡng" --> TriggerLog["KnowledgeGapQueue.logQuery(rawText)"]
+    TriggerLog --> Jaccard["calculateJaccardSimilarity() against existing gaps"]
+    Jaccard -- "Similarity >= 0.6" --> Increment["gap.hitCount += 1"]
+    Jaccard -- "Similarity < 0.6" --> NewGap["Create new UnresolvedQuery with guessDomain()"]
+    
+    TriggerLog --> ReturnFallback["Return SearchResponse(isFound: false, message, logged: true)"]
+```
