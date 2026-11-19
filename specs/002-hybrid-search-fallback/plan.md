@@ -10,10 +10,12 @@
 flowchart LR
     subgraph UI ["Client Layer (Mobile App / Web Admin)"]
         ClientApp["Mobile/Web Client"]
+        AdminDashboard["Web Admin Dashboard"]
     end
 
     subgraph SearchSubsystem ["Search & Retrieval Subsystem"]
-        Engine["LegalSearchEngine"]
+        Validator["InputValidationGuard"]
+        Engine["LegalSearchEngine\n(Compound Bigram + Unigram + Citation Booster)"]
         Guard["ConfidenceGuard (Threshold 0.65)"]
         GapQueue["KnowledgeGapQueue"]
     end
@@ -23,19 +25,22 @@ flowchart LR
         GapsDB[("Unresolved Queries Store\n(Knowledge Gaps)")]
     end
 
-    ClientApp -->|SearchQuery| Engine
+    ClientApp -->|SearchQuery| Validator
+    Validator -- "Query rỗng / vô nghĩa" -->|Prompt for valid input| ClientApp
+    Validator -- "Query hợp lệ" --> Engine
     Engine -->|Fetch Chunks| ChunksRepo
     Engine -->|Calculate Score| Guard
     Guard -- "Score >= 0.65" -->|SearchResponse (isFound: true)| ClientApp
     Guard -- "Score < 0.65" -->|Log Unresolved| GapQueue
     GapQueue -->|Save & Increment Hit| GapsDB
     Guard -- "Score < 0.65" -->|SearchResponse (isFound: false)| ClientApp
+    AdminDashboard <-->|resolveGap / ignoreGap / getStats| GapQueue
 ```
 
 ### Hợp đồng giao tiếp (Contracts):
 * **`ClientApp -> Engine`:** Gửi `SearchQuery { text, domain?, limit?, confidenceThreshold? }`.
 * **`Engine -> ClientApp`:** Trả về `SearchResponse { isFound, topScore, results, message, loggedToKnowledgeGap }`.
-* **`Engine -> GapQueue`:** Khi `topScore < threshold`, gọi `logQuery(rawText)`.
+* **`AdminDashboard <-> GapQueue`:** Quản trị viên duyệt câu hỏi đã nạp luật (`resolveGap`), loại bỏ câu spam (`ignoreGap`) và đọc báo cáo thống kê (`getStats`).
 
 ---
 
@@ -50,6 +55,7 @@ CREATE TABLE IF NOT EXISTS unresolved_queries (
     domain_guess VARCHAR(30) DEFAULT 'OTHER', -- 'TRAFFIC' | 'LABOR' | 'SOCIAL_INSURANCE' | 'HOUSING' | 'OTHER'
     hit_count INT DEFAULT 1,
     status VARCHAR(20) DEFAULT 'unreviewed', -- 'unreviewed' | 'resolved' | 'ignored'
+    admin_notes TEXT,                        -- Ghi chú của chuyên viên (VD: "Đã nạp thêm Luật Đất đai 2024")
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -64,6 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_unresolved_queries_status ON unresolved_queries (
 
 * **Ràng buộc bất biến 1 (No Self-Generated Law):** Không bao giờ cho phép AI tự suy diễn mức phạt hoặc điều luật để lưu vào `legal_chunks`. Dữ liệu luật chỉ được nạp từ file có mộc đỏ hoặc admin phê duyệt.
 * **Ràng buộc bất biến 2 (Confidence Threshold Invariant):** Ngưỡng tin cậy $T = 0.65$. Nếu $\max(Score) < T$, kết quả trả về bắt buộc phải có `isFound = false` và `results = []`.
+* **Ràng buộc bất biến 3 (Garbage Input Rejection):** Không bao giờ ghi nhận câu hỏi rỗng, chỉ có dấu câu hoặc < 3 ký tự vào `KnowledgeGapQueue`.
 * **Ranh giới sự cố (Fallback Boundary):** Khi kho dữ liệu không có câu trả lời, hệ thống không được ném Exception hay sập app, mà phải trả về phản hồi lịch sự, an toàn và ghi nhận log phục vụ nâng cấp.
 
 ---
@@ -104,6 +111,14 @@ export interface UnresolvedQuery {
   status: GapStatus;
   createdAt: string;
   updatedAt: string;
+  adminNotes?: string;
+}
+
+export interface GapQueueStats {
+  total: number;
+  unreviewed: number;
+  resolved: number;
+  ignored: number;
 }
 ```
 
@@ -115,16 +130,18 @@ export interface UnresolvedQuery {
 * `class LegalSearchEngine`:
   - `constructor(chunks: LegalChunk[], gapQueue?: KnowledgeGapQueue)`
   - `search(query: SearchQuery): SearchResponse`
-    - **Input:** `query` chứa chuỗi tìm kiếm từ người dùng.
-    - **Output:** `SearchResponse` cam kết theo hợp đồng.
-  - `private scoreChunk(queryWords: string[], queryText: string, chunk: LegalChunk): number`
-    - Tính điểm tin cậy tổng hợp dựa trên từ khóa pháp lý (40%), độ phủ từ tố (50%) và cụm từ chính xác (10%).
+    - **Xử lý:** Input validation -> Trích xuất từ đơn + Bigrams -> Chấm điểm candidates -> Kiểm tra ngưỡng tin cậy.
+  - `private scoreChunk(queryWords: string[], queryBigrams: string[], queryText: string, chunk: LegalChunk): number`
+    - Tính điểm kết hợp: Từ khóa (25%) + Từ đơn (35%) + Cụm từ ghép Bigrams (40%) + Citation Booster (lên tới +0.5).
 
 ### Trong `src/search/gap-queue.ts`:
+* `function removeVietnameseDiacritics(str: string): string`: Chuẩn hóa tiếng Việt không dấu chuẩn ECMAScript.
 * `class KnowledgeGapQueue`:
-  - `logQuery(rawQuery: string): UnresolvedQuery`: Khử trùng lặp qua Jaccard similarity (ngưỡng 0.6), tự động đoán domain và tăng `hitCount`.
-  - `getAll(): UnresolvedQuery[]`: Trả về danh sách khoảng trống tri thức sắp xếp theo `hitCount` giảm dần.
-  - `updateStatus(id: string, status: GapStatus): boolean`
+  - `logQuery(rawQuery: string): UnresolvedQuery | null`: Ghi nhận câu hỏi thiếu (bỏ qua query rác).
+  - `resolveGap(id: string, adminNotes?: string): boolean`: Đánh dấu đã giải quyết.
+  - `ignoreGap(id: string, reason?: string): boolean`: Bỏ qua câu hỏi spam.
+  - `getStats(): GapQueueStats`: Báo cáo thống kê hàng đợi.
+  - `searchGaps(keyword: string): UnresolvedQuery[]`: Tra cứu trong hàng đợi.
 
 ---
 
@@ -132,15 +149,19 @@ export interface UnresolvedQuery {
 
 ```mermaid
 flowchart TD
-    User["Caller (API / Test)"] --> Search["LegalSearchEngine.search(query)"]
+    User["Caller (API / Mobile App / Test)"] --> Search["LegalSearchEngine.search(query)"]
     
-    Search --> Norm["normalizeQueryText(query.text)"]
-    Search --> Filter["Candidate Chunks (Filter by domain if present)"]
+    Search --> Validate{"rawText.length >= 3 && meaningfulWords.length > 0?"}
+    Validate -- "Không" --> ReturnInvalid["Return SearchResponse(isFound: false, message: 'Nhập cụ thể hơn', logged: false)"]
+    
+    Validate -- "Hợp lệ" --> ExtractNgram["extractBigrams(meaningfulWords)"]
+    ExtractNgram --> Filter["Candidate Chunks (Filter by domain if present)"]
     
     Filter --> Loop["Loop: scoreChunk() for each candidate"]
-    Loop --> KwCheck["1. Check chunk.keywords matching"]
-    Loop --> WordCheck["2. Check word coverage ratio"]
-    Loop --> PhraseCheck["3. Check exact phrase bonus"]
+    Loop --> KwCheck["1. Keywords matching (accent + unaccent) (25%)"]
+    Loop --> UnigramCheck["2. Unigram word coverage (35%)"]
+    Loop --> BigramCheck["3. Bigram compound phrase coverage (40%)"]
+    Loop --> CiteCheck["4. Citation Booster (+0.35 nếu khớp Điều, +0.15 nếu khớp Số hiệu)"]
     
     Loop --> Sort["Sort candidates by score DESC"]
     Sort --> GuardCheck{"topScore >= threshold (0.65)?"}

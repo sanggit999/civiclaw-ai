@@ -81,7 +81,6 @@ describe('Feature 002: Legal Search, Fallback Guard & Knowledge Gap Queue', () =
     engine.search({ text: 'cách tính thuế thu nhập cá nhân trúng số vietlott' });
 
     const gaps = gapQueue.getAll();
-    // Không tạo 2 bản ghi riêng biệt, mà chỉ gom thành 1 bản ghi với hitCount = 2
     expect(gaps).toHaveLength(1);
     expect(gaps[0].hitCount).toBe(2);
   });
@@ -91,5 +90,71 @@ describe('Feature 002: Legal Search, Fallback Guard & Knowledge Gap Queue', () =
     const gaps = gapQueue.getAll();
     expect(gaps).toHaveLength(1);
     expect(gaps[0].domainGuess).toBe('TRAFFIC');
+  });
+
+  it('Kịch bản 5: Phải tìm kiếm chính xác kể cả khi người dùng gõ tiếng Việt KHÔNG DẤU trên điện thoại', () => {
+    const response = engine.search({
+      text: 'loi chuyen lan duong xe o to khong co tin hieu',
+    });
+
+    expect(response.isFound).toBe(true);
+    expect(response.topScore).toBeGreaterThanOrEqual(0.65);
+    expect(response.results[0].chunk.fullReference).toBe(
+      'Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP'
+    );
+  });
+
+  it('Kịch bản 6: Phải kích hoạt Citation Booster khi người dùng hỏi đích danh Điều luật và Số hiệu', () => {
+    const response = engine.search({
+      text: 'quy định tại Điều 25 Bộ luật Lao động 2019',
+    });
+
+    expect(response.isFound).toBe(true);
+    expect(response.results[0].chunk.article).toBe('Điều 25');
+    expect(response.results[0].chunk.fullReference).toBe('Điều 25 Bộ luật Lao động 2019');
+  });
+
+  it('Kịch bản 7: Input Validation Guard - Chặn câu hỏi rỗng hoặc vô nghĩa, không ghi rác vào Knowledge Gap Queue', () => {
+    const resEmpty = engine.search({ text: '   ' });
+    expect(resEmpty.isFound).toBe(false);
+    expect(resEmpty.loggedToKnowledgeGap).toBe(false);
+    expect(resEmpty.message).toContain('Vui lòng nhập câu hỏi pháp lý cụ thể hơn');
+
+    const resPunctuation = engine.search({ text: '???' });
+    expect(resPunctuation.isFound).toBe(false);
+    expect(resPunctuation.loggedToKnowledgeGap).toBe(false);
+
+    // Hàng đợi phải hoàn toàn sạch, không có bản ghi rác
+    expect(gapQueue.getAll()).toHaveLength(0);
+  });
+
+  it('Kịch bản 8: Quản trị Hàng đợi Web Admin (Duyệt đã nạp luật, Bỏ qua spam, Thống kê)', () => {
+    gapQueue.logQuery('thủ tục cấp sổ đỏ đất nông nghiệp');
+    gapQueue.logQuery('thủ tục xin cấp sổ đỏ đất');
+    gapQueue.logQuery('spam quảng cáo link cá cược 123');
+
+    expect(gapQueue.getAll()).toHaveLength(2);
+
+    // Lấy bản ghi đất đai
+    const landGap = gapQueue.searchGaps('sổ đỏ')[0];
+    expect(landGap).toBeDefined();
+    expect(landGap.hitCount).toBe(2);
+
+    // Admin duyệt đã nạp Luật Đất đai
+    const resolved = gapQueue.resolveGap(landGap.id, 'Đã bổ sung Luật Đất đai 2024');
+    expect(resolved).toBe(true);
+    expect(gapQueue.getById(landGap.id)?.status).toBe('resolved');
+
+    // Admin bỏ qua câu spam
+    const spamGap = gapQueue.searchGaps('quảng cáo')[0];
+    gapQueue.ignoreGap(spamGap.id, 'Spam không liên quan');
+    expect(gapQueue.getById(spamGap.id)?.status).toBe('ignored');
+
+    // Kiểm tra thống kê
+    const stats = gapQueue.getStats();
+    expect(stats.total).toBe(2);
+    expect(stats.resolved).toBe(1);
+    expect(stats.ignored).toBe(1);
+    expect(stats.unreviewed).toBe(0);
   });
 });

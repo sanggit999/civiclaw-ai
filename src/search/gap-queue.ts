@@ -1,4 +1,15 @@
-import { GapStatus, UnresolvedQuery, ExtendedDomain } from './types.js';
+import { GapStatus, UnresolvedQuery, ExtendedDomain, GapQueueStats } from './types.js';
+
+/**
+ * Loại bỏ dấu tiếng Việt chuẩn ECMAScript không phụ thuộc thư viện ngoài
+ */
+export function removeVietnameseDiacritics(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
 
 /**
  * Chuẩn hóa chuỗi văn bản để so sánh từ vựng: bỏ dấu câu, chuyển chữ thường
@@ -69,9 +80,16 @@ export class KnowledgeGapQueue {
 
   /**
    * Ghi nhận một câu hỏi thiếu vào hàng đợi. Tự động khử trùng lặp và cộng dồn hitCount.
+   * Chặn ghi rác nếu câu hỏi rỗng hoặc ngắn hơn 3 ký tự.
    */
-  logQuery(rawQuery: string): UnresolvedQuery {
-    const normalized = normalizeQueryText(rawQuery);
+  logQuery(rawQuery: string): UnresolvedQuery | null {
+    const trimmed = rawQuery.trim();
+    const normalized = normalizeQueryText(trimmed);
+
+    // BỘ LỌC CHẶN RÁC: Không ghi nhận query rỗng hoặc quá ngắn
+    if (normalized.length < 3) {
+      return null;
+    }
 
     // 1. Kiểm tra xem có câu hỏi nào tương tự (độ trùng từ vựng >= 60%) chưa
     for (const gap of this.gaps.values()) {
@@ -87,9 +105,9 @@ export class KnowledgeGapQueue {
     const now = new Date().toISOString();
     const newGap: UnresolvedQuery = {
       id: generateId(),
-      queryText: rawQuery.trim(),
+      queryText: trimmed,
       normalizedQuery: normalized,
-      domainGuess: guessDomain(rawQuery),
+      domainGuess: guessDomain(trimmed),
       hitCount: 1,
       status: 'unreviewed',
       createdAt: now,
@@ -117,5 +135,47 @@ export class KnowledgeGapQueue {
     gap.status = status;
     gap.updatedAt = new Date().toISOString();
     return true;
+  }
+
+  resolveGap(id: string, adminNotes?: string): boolean {
+    const gap = this.gaps.get(id);
+    if (!gap) return false;
+    gap.status = 'resolved';
+    if (adminNotes) gap.adminNotes = adminNotes;
+    gap.updatedAt = new Date().toISOString();
+    return true;
+  }
+
+  ignoreGap(id: string, reason?: string): boolean {
+    const gap = this.gaps.get(id);
+    if (!gap) return false;
+    gap.status = 'ignored';
+    if (reason) gap.adminNotes = reason;
+    gap.updatedAt = new Date().toISOString();
+    return true;
+  }
+
+  getStats(): GapQueueStats {
+    let unreviewed = 0;
+    let resolved = 0;
+    let ignored = 0;
+    for (const g of this.gaps.values()) {
+      if (g.status === 'unreviewed') unreviewed++;
+      else if (g.status === 'resolved') resolved++;
+      else if (g.status === 'ignored') ignored++;
+    }
+    return {
+      total: this.gaps.size,
+      unreviewed,
+      resolved,
+      ignored,
+    };
+  }
+
+  searchGaps(keyword: string): UnresolvedQuery[] {
+    const term = normalizeQueryText(keyword);
+    return this.getAll().filter(
+      (g) => g.normalizedQuery.includes(term) || g.domainGuess.toLowerCase().includes(term)
+    );
   }
 }

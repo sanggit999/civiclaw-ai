@@ -5,12 +5,19 @@
 * **Nỗi đau thực tế (Pain Point):**
   - Khi người dùng hỏi một tình huống không có trong 5 bộ luật hiện hành (hoặc chưa được số hóa), các trợ lý AI thông thường sẽ tự "suy diễn", bịa ra số hiệu văn bản và mức phạt không có thật (Hallucination).
   - Quản trị viên không nắm được người dân đang quan tâm những lĩnh vực/bộ luật nào còn thiếu để chủ động nạp thêm dữ liệu.
+  - Trên điện thoại di động, người dân thường gõ tiếng Việt **không dấu** (`"chuyen lan o to khong xi nhan"`). Nếu hệ thống chỉ khớp từ khóa cứng có dấu thì sẽ trượt và báo không tìm thấy kết quả.
+  - Người dùng nhập chuỗi rác (`"   "`, `"???"`) nếu không chặn ở ranh giới sẽ làm ô nhiễm hàng đợi quản trị.
 * **Hậu quả nếu không làm:** Nếu cho LLM tự sinh câu trả lời và tự lưu vào cơ sở dữ liệu, kho dữ liệu luật sẽ bị nhiễm độc (Data Poisoning), phá vỡ cam kết "100% trích dẫn nguồn luật chính thống có thể kiểm chứng".
+
+---
 
 ## 2. Hành vi Mong muốn (Desired Behavior)
 1. **Khi câu hỏi có trong luật:** Trả về chính xác điều luật trích dẫn (*Điểm, Khoản, Điều, Số hiệu văn bản*) và nội dung mức xử phạt/quy định.
-2. **Khi câu hỏi ngoài phạm vi 5 bộ luật:** Hệ thống kích hoạt **Fallback Guard**, trả về thông báo trung thực (*"Hệ thống chưa tìm thấy căn cứ pháp lý trong 5 bộ luật hiện hành..."*), tuyệt đối không đoán mò.
-3. **Thu thập khoảng trống:** Tự động ghi câu hỏi thiếu vào hàng đợi `unresolved_queries`, tự động gom nhóm câu hỏi trùng lặp để tăng lượt đếm `hitCount`.
+2. **Hỗ trợ gõ tiếng Việt không dấu:** Tự động chuẩn hóa dấu thanh để người dân gõ nhanh trên điện thoại vẫn tìm ra đúng điều luật.
+3. **Ưu tiên khi hỏi đích danh Điều luật (Citation Booster):** Khi người dùng hỏi *"Điều 25 Bộ luật Lao động"* hoặc *"Điều 6 Nghị định 168"*, hệ thống nhận diện số Điều và đẩy ngay chunk đó lên vị trí đầu bảng.
+4. **Khi câu hỏi ngoài phạm vi 5 bộ luật:** Hệ thống kích hoạt **Fallback Guard**, trả về thông báo trung thực (*"Hệ thống chưa tìm thấy căn cứ pháp lý trong 5 bộ luật hiện hành..."*), tuyệt đối không đoán mò.
+5. **Thu thập khoảng trống có chọn lọc:** Tự động ghi câu hỏi thiếu vào hàng đợi `unresolved_queries`, tự động gom nhóm câu hỏi trùng lặp để tăng lượt đếm `hitCount`, chặn ghi nhận chuỗi rác.
+6. **Công cụ quản trị Web Admin:** Cho phép Admin duyệt câu hỏi đã nạp luật (`resolveGap`), bỏ qua spam (`ignoreGap`) và xem báo cáo thống kê (`getStats`).
 
 ---
 
@@ -21,34 +28,32 @@
 +-------------------------------------------------------------------+
 | CIVICLAW AI - TRỢ LÝ PHÁP LÝ                                      |
 +-------------------------------------------------------------------+
-| User: Thuế thu nhập cá nhân trúng xổ số kiến thiết 2 tỷ là bao     |
-|       nhiêu?                                                      |
+| User: chuyen lan duong xe o to khong tin hieu phat bao nhieu      |
 |                                                                   |
 | Assistant:                                                        |
-| ℹ️ THÔNG BÁO MINH BẠCH                                            |
-| Hệ thống CivicLaw AI hiện quản lý 5 bộ luật cốt lõi (Giao thông,  |
-| Lao động, BHXH, Nhà ở).                                           |
+| 📜 CĂN CỨ PHÁP LÝ: Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP  |
 |                                                                   |
-| Câu hỏi về "Thuế thu nhập cá nhân" hiện chưa nằm trong phạm vi     |
-| dữ liệu đã được đối soát chính thức. Để bảo đảm an toàn pháp lý, |
-| trợ lý từ chối suy đoán số liệu.                                  |
+| MỨC XỬ PHẠT:                                                      |
+| Phạt tiền từ 600.000 đồng đến 800.000 đồng đối với người điều    |
+| khiển xe ô tô chuyển làn đường không đúng nơi cho phép hoặc       |
+| không có tín hiệu báo trước.                                      |
 |                                                                   |
-| ✅ Câu hỏi của bạn đã được chuyển vào hàng đợi ghi nhận để Ban    |
-| Quản trị cập nhật thêm Luật Thuế TNCN trong thời gian tới.        |
+| [Xem toàn văn Điều 6 PDF]  [Trừ điểm GPLX liên quan]               |
 +-------------------------------------------------------------------+
 ```
 
 ### B. Mock-up Web Admin (Góc nhìn Quản Trị Viên)
 ```text
-+-------------------------------------------------------------------+
-| BẢNG QUẢN TRỊ - HÀNG ĐỢI KHOẢNG TRỐNG TRI THỨC (KNOWLEDGE GAPS)    |
-+-------------------------------------------------------------------+
-| Lượt hỏi | Lĩnh vực | Nội dung câu hỏi chưa có luật | Trạng thái  |
-|----------|----------|-------------------------------|-------------|
-| 142 lượt | OTHER    | Thuế thu nhập cá nhân trúng số| [Nạp Luật]  |
-| 89 lượt  | OTHER    | Tranh chấp thừa kế đất đai    | [Nạp Luật]  |
-| 12 lượt  | TRAFFIC  | Đăng kiểm xe bán tải quá hạn  | [Đã xử lý]  |
-+-------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+| BẢNG QUẢN TRỊ - HÀNG ĐỢI KHOẢNG TRỐNG TRI THỨC (KNOWLEDGE GAPS)                          |
+| Tổng số: 120 | Đang chờ: 85 | Đã giải quyết: 25 | Bỏ qua: 10                            |
++-----------------------------------------------------------------------------------------+
+| Lượt hỏi | Lĩnh vực | Nội dung câu hỏi chưa có luật | Hành động                          |
+|----------|----------|-------------------------------|------------------------------------|
+| 142 lượt | OTHER    | Thuế thu nhập cá nhân trúng số| [Đã Nạp Luật] [Bỏ qua]             |
+| 89 lượt  | OTHER    | Tranh chấp thừa kế đất đai    | [Đã Nạp Luật] [Bỏ qua]             |
+| 12 lượt  | TRAFFIC  | Đăng kiểm xe bán tải quá hạn  | [Đã Giải Quyết: Đã thêm TT 02]     |
++-----------------------------------------------------------------------------------------+
 ```
 
 ---
@@ -60,6 +65,8 @@
   - *Trả lời:* Mặc định là `0.65` (thang 0.0 - 1.0). Nếu điểm tìm kiếm cao nhất < 0.65, kích hoạt Fallback Guard.
 - [x] **Q3: Cơ chế chống trùng lặp trong Knowledge Gap Queue hoạt động thế nào?**
   - *Trả lời:* Sử dụng hệ số Jaccard từ vựng tiếng Việt. Nếu độ trùng >= 60%, tăng `hitCount += 1` thay vì tạo rác DB.
+- [x] **Q4: Xử lý thế nào với câu hỏi rỗng hoặc toàn dấu câu?**
+  - *Trả lời:* Chặn ngay tại Input Validation Guard, không ghi nhận vào Knowledge Gap Queue.
 
 ---
 
@@ -79,3 +86,23 @@
 * **Given:** Bảng `unresolved_queries` đã có bản ghi về *"thuế thu nhập cá nhân"*.
 * **When:** Người dùng khác hỏi tiếp *"cách tính thuế thu nhập cá nhân trúng số vietlott"*.
 * **Then:** Không tạo bản ghi mới, tăng `hitCount` lên 2.
+
+### Kịch bản 4: Hỗ trợ tiếng Việt không dấu (Accent Insensitive)
+* **Given:** Người dùng gõ không dấu trên điện thoại *"loi chuyen lan duong xe o to khong co tin hieu"*.
+* **When:** Chạy tìm kiếm `engine.search()`.
+* **Then:** Hệ thống khớp thành công với chunk có dấu `Điểm a Khoản 2 Điều 6`, điểm tin cậy >= 0.65.
+
+### Kịch bản 5: Ưu tiên tìm đích danh Điều luật (Citation Booster)
+* **Given:** Người dùng hỏi cụ thể *"quy định tại Điều 25 Bộ luật Lao động 2019"*.
+* **When:** Chạy tìm kiếm `engine.search()`.
+* **Then:** Chunk `Điều 25` được cộng điểm thưởng Citation Bonus và đứng đầu danh sách kết quả.
+
+### Kịch bản 6: Chặn câu hỏi rỗng / vô nghĩa (Input Validation Guard)
+* **Given:** Người dùng gửi câu hỏi rỗng `"   "` hoặc chỉ có dấu câu `"???"`.
+* **When:** Chạy tìm kiếm `engine.search()`.
+* **Then:** `isFound = false`, `loggedToKnowledgeGap = false`, hàng đợi quản trị không bị ghi rác.
+
+### Kịch bản 7: Quản trị hàng đợi Web Admin (Resolve, Ignore, Stats)
+* **Given:** Hàng đợi có câu hỏi thiếu về đất đai và một câu hỏi spam.
+* **When:** Admin gọi `resolveGap()` và `ignoreGap()`.
+* **Then:** Trạng thái cập nhật chính xác (`resolved`, `ignored`), hàm `getStats()` phản ánh đúng số lượng.

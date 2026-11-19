@@ -33,4 +33,12 @@ export interface UnresolvedQuery {
   status: GapStatus;
   createdAt: string;
   updatedAt: string;
+  adminNotes?: string;
+}
+
+export interface GapQueueStats {
+  total: number;
+  unreviewed: number;
+  resolved: number;
+  ignored: number;
 }
