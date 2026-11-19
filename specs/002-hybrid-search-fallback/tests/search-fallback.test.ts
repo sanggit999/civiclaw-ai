@@ -157,4 +157,22 @@ describe('Feature 002: Legal Search, Fallback Guard & Knowledge Gap Queue', () =
     expect(stats.ignored).toBe(1);
     expect(stats.unreviewed).toBe(0);
   });
+
+  it('Kịch bản 9: Không hardcode - Có thể tùy biến cấu hình trọng số và ngưỡng tin cậy qua constructor', () => {
+    // Khởi tạo engine với ngưỡng cực cao 0.95 (yêu cầu gần như tuyệt đối)
+    const strictEngine = new LegalSearchEngine(sampleChunks, gapQueue, {
+      defaultConfidenceThreshold: 0.95,
+      minQueryLength: 5,
+    });
+
+    expect(strictEngine.getConfig().defaultConfidenceThreshold).toBe(0.95);
+    expect(strictEngine.getConfig().minQueryLength).toBe(5);
+
+    // Một câu hỏi điểm 0.88 sẽ bị Fallback Guard từ chối vì chưa đạt ngưỡng 0.95
+    const res = strictEngine.search({
+      text: 'lỗi chuyển làn đường xe ô tô không có tín hiệu báo trước',
+    });
+    expect(res.isFound).toBe(false);
+    expect(res.loggedToKnowledgeGap).toBe(true);
+  });
 });

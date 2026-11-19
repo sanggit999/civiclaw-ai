@@ -79,6 +79,21 @@ CREATE INDEX IF NOT EXISTS idx_unresolved_queries_status ON unresolved_queries (
 
 ## 1. Kiểu dữ liệu & Interfaces: `src/search/types.ts`
 ```typescript
+export interface SearchScoringWeights {
+  keyword: number;              // Trọng số từ khóa chuyên ngành (0.25)
+  unigram: number;              // Trọng số từ đơn (0.35)
+  bigram: number;               // Trọng số cụm từ ghép (0.40)
+  citationArticleBonus: number; // Điểm thưởng khi khớp đích danh Điều luật (0.35)
+  citationDocBonus: number;     // Điểm thưởng khi khớp số hiệu văn bản (0.15)
+}
+
+export interface SearchEngineConfig {
+  defaultConfidenceThreshold: number; // Ngưỡng tin cậy mặc định (0.65)
+  defaultLimit: number;               // Số lượng kết quả mặc định (5)
+  minQueryLength: number;             // Độ dài ký tự tối thiểu để tìm kiếm (3)
+  weights: SearchScoringWeights;
+}
+
 export interface SearchQuery {
   text: string;
   domain?: LegalDomain;

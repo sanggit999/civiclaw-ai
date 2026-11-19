@@ -43,25 +43,28 @@ export function calculateJaccardSimilarity(textA: string, textB: string): number
   return intersectionCount / unionCount;
 }
 
+export const GAP_QUEUE_CONFIG = {
+  MIN_QUERY_LENGTH: 3,
+  DEDUPLICATION_SIMILARITY_THRESHOLD: 0.6,
+};
+
+export const DOMAIN_KEYWORD_PATTERNS: Array<{ domain: ExtendedDomain; pattern: RegExp }> = [
+  { domain: 'TRAFFIC', pattern: /xe|giao thông|bằng lái|gplx|ô tô|mô tô|đèn đỏ|phạt|làn đường|tai nạn/ },
+  { domain: 'LABOR', pattern: /lao động|tiền lương|nghỉ phép|hợp đồng lao động|sa thải|thử việc|tăng ca/ },
+  { domain: 'SOCIAL_INSURANCE', pattern: /bảo hiểm|bhxh|bhyt|thai sản|hưu trí|trợ cấp/ },
+  { domain: 'HOUSING', pattern: /nhà ở|thuê nhà|đặt cọc|chung cư|sổ hồng|sổ đỏ/ },
+];
+
 /**
  * Tự động đoán lĩnh vực pháp lý dựa trên từ khóa câu hỏi
  */
 export function guessDomain(text: string): ExtendedDomain {
   const lower = text.toLowerCase();
-
-  if (/xe|giao thông|bằng lái|gplx|ô tô|mô tô|đèn đỏ|phạt|làn đường|tai nạn/.test(lower)) {
-    return 'TRAFFIC';
+  for (const item of DOMAIN_KEYWORD_PATTERNS) {
+    if (item.pattern.test(lower)) {
+      return item.domain;
+    }
   }
-  if (/lao động|tiền lương|nghỉ phép|hợp đồng lao động|sa thải|thử việc|tăng ca/.test(lower)) {
-    return 'LABOR';
-  }
-  if (/bảo hiểm|bhxh|bhyt|thai sản|hưu trí|trợ cấp/.test(lower)) {
-    return 'SOCIAL_INSURANCE';
-  }
-  if (/nhà ở|thuê nhà|đặt cọc|chung cư|sổ hồng|sổ đỏ/.test(lower)) {
-    return 'HOUSING';
-  }
-
   return 'OTHER';
 }
 
@@ -80,21 +83,21 @@ export class KnowledgeGapQueue {
 
   /**
    * Ghi nhận một câu hỏi thiếu vào hàng đợi. Tự động khử trùng lặp và cộng dồn hitCount.
-   * Chặn ghi rác nếu câu hỏi rỗng hoặc ngắn hơn 3 ký tự.
+   * Chặn ghi rác nếu câu hỏi rỗng hoặc ngắn hơn độ dài tối thiểu.
    */
   logQuery(rawQuery: string): UnresolvedQuery | null {
     const trimmed = rawQuery.trim();
     const normalized = normalizeQueryText(trimmed);
 
     // BỘ LỌC CHẶN RÁC: Không ghi nhận query rỗng hoặc quá ngắn
-    if (normalized.length < 3) {
+    if (normalized.length < GAP_QUEUE_CONFIG.MIN_QUERY_LENGTH) {
       return null;
     }
 
-    // 1. Kiểm tra xem có câu hỏi nào tương tự (độ trùng từ vựng >= 60%) chưa
+    // 1. Kiểm tra xem có câu hỏi nào tương tự (độ trùng từ vựng >= ngưỡng de-dup) chưa
     for (const gap of this.gaps.values()) {
       const similarity = calculateJaccardSimilarity(gap.normalizedQuery, normalized);
-      if (similarity >= 0.6) {
+      if (similarity >= GAP_QUEUE_CONFIG.DEDUPLICATION_SIMILARITY_THRESHOLD) {
         gap.hitCount += 1;
         gap.updatedAt = new Date().toISOString();
         return gap;

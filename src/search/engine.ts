@@ -1,12 +1,42 @@
 import { LegalChunk } from '../ingestion/types.js';
 import { KnowledgeGapQueue, normalizeQueryText, removeVietnameseDiacritics } from './gap-queue.js';
-import { SearchQuery, SearchResponse, SearchResultItem } from './types.js';
+import { SearchEngineConfig, SearchQuery, SearchResponse, SearchResultItem } from './types.js';
 
-const STOP_WORDS = new Set([
+/**
+ * Cấu hình tham số và trọng số chấm điểm mặc định của bộ máy tìm kiếm
+ */
+export const DEFAULT_SEARCH_CONFIG: SearchEngineConfig = {
+  defaultConfidenceThreshold: 0.65,
+  defaultLimit: 5,
+  minQueryLength: 3,
+  weights: {
+    keyword: 0.25,               // Trọng số từ khóa chuyên ngành
+    unigram: 0.35,               // Trọng số độ bao phủ từ đơn
+    bigram: 0.40,                // Trọng số cụm từ ghép 2 từ
+    citationArticleBonus: 0.35,  // Điểm thưởng khi tra cứu đích danh Điều luật
+    citationDocBonus: 0.15,      // Điểm thưởng khi tra cứu số hiệu văn bản
+  },
+};
+
+/**
+ * Danh mục hư từ tiếng Việt mặc định (Stop words) dùng trong chuẩn hóa NLP
+ */
+export const DEFAULT_STOP_WORDS = new Set([
   'là', 'và', 'hoặc', 'thì', 'mà', 'của', 'ở', 'tại', 'trong', 'khi',
   'bị', 'được', 'cho', 'về', 'này', 'đó', 'gì', 'bao', 'nhiêu', 'mấy',
   'các', 'những', 'một', 'cái', 'quy', 'định', 'theo'
 ]);
+
+/**
+ * Mẫu thông điệp phản hồi chuẩn hóa cho người dùng
+ */
+export const SEARCH_MESSAGES = {
+  SUCCESS: 'Tìm thấy căn cứ pháp lý phù hợp trong kho văn bản.',
+  QUERY_TOO_SHORT: 'Vui lòng nhập câu hỏi pháp lý cụ thể hơn để hệ thống tra cứu chính xác.',
+  NOT_FOUND_FALLBACK:
+    'Hệ thống chưa tìm thấy căn cứ pháp lý trong 5 bộ luật hiện hành để trả lời câu hỏi này một cách chính xác tuyệt đối. ' +
+    'Câu hỏi đã được tự động ghi nhận vào hàng đợi để Quản trị viên cập nhật bổ sung văn bản luật.',
+};
 
 /**
  * Trích xuất danh sách cụm 2 từ (Bigrams) phục vụ so khớp từ ghép tiếng Việt
@@ -22,14 +52,34 @@ function extractBigrams(words: string[]): string[] {
 export class LegalSearchEngine {
   private chunks: LegalChunk[];
   private gapQueue: KnowledgeGapQueue;
+  private config: SearchEngineConfig;
+  private stopWords: Set<string>;
 
-  constructor(chunks: LegalChunk[] = [], gapQueue?: KnowledgeGapQueue) {
+  constructor(
+    chunks: LegalChunk[] = [],
+    gapQueue?: KnowledgeGapQueue,
+    customConfig?: Partial<SearchEngineConfig>,
+    customStopWords?: Set<string>
+  ) {
     this.chunks = chunks;
     this.gapQueue = gapQueue || new KnowledgeGapQueue();
+    this.config = {
+      ...DEFAULT_SEARCH_CONFIG,
+      ...customConfig,
+      weights: {
+        ...DEFAULT_SEARCH_CONFIG.weights,
+        ...customConfig?.weights,
+      },
+    };
+    this.stopWords = customStopWords || DEFAULT_STOP_WORDS;
   }
 
   public getGapQueue(): KnowledgeGapQueue {
     return this.gapQueue;
+  }
+
+  public getConfig(): SearchEngineConfig {
+    return this.config;
   }
 
   public addChunks(newChunks: LegalChunk[]): void {
@@ -37,10 +87,10 @@ export class LegalSearchEngine {
   }
 
   /**
-   * Tính điểm tương đồng kết hợp:
-   * 1. Từ khóa chuyên ngành (Keywords: 25%)
-   * 2. Độ bao phủ từ đơn (Unigram Word Coverage: 35% - hỗ trợ tiếng Việt không dấu)
-   * 3. Độ bao phủ cụm từ ghép (Bigram Phrase Coverage: 40% - phân biệt chuẩn xác hành vi)
+   * Tính điểm tương đồng kết hợp theo trọng số cấu hình:
+   * 1. Từ khóa chuyên ngành (Keywords)
+   * 2. Độ bao phủ từ đơn (Unigram Word Coverage - hỗ trợ tiếng Việt không dấu)
+   * 3. Độ bao phủ cụm từ ghép (Bigram Phrase Coverage - phân biệt chuẩn xác hành vi)
    * 4. Điểm thưởng khi tra đích danh Điều luật & Số hiệu (Citation Booster)
    */
   private scoreChunk(
@@ -98,8 +148,12 @@ export class LegalSearchEngine {
     }
     const bigramCoverage = queryBigrams.length > 0 ? matchedBigrams / queryBigrams.length : wordCoverage;
 
-    // Điểm nền tảng kết hợp (Base Score)
-    const baseScore = keywordScore * 0.25 + wordCoverage * 0.35 + bigramCoverage * 0.40;
+    // Điểm nền tảng kết hợp (Base Score) dựa trên weights cấu hình
+    const { weights } = this.config;
+    const baseScore =
+      keywordScore * weights.keyword +
+      wordCoverage * weights.unigram +
+      bigramCoverage * weights.bigram;
 
     // 4. Khớp đích danh Điều luật & Số hiệu văn bản (Citation Booster)
     let citationBonus = 0;
@@ -108,12 +162,12 @@ export class LegalSearchEngine {
     if (articleMatch) {
       const requestedArticle = `Điều ${articleMatch[1]}`.toLowerCase();
       if (chunk.article.toLowerCase() === requestedArticle) {
-        citationBonus += 0.35;
+        citationBonus += weights.citationArticleBonus;
       }
     }
 
     if (chunk.docNumber && queryText.includes(chunk.docNumber.toLowerCase())) {
-      citationBonus += 0.15;
+      citationBonus += weights.citationDocBonus;
     }
 
     const totalScore = Math.min(1.0, baseScore + citationBonus);
@@ -124,23 +178,23 @@ export class LegalSearchEngine {
    * Tìm kiếm điều luật kèm cơ chế Fallback Guard chống ảo giác
    */
   public search(query: SearchQuery): SearchResponse {
-    const threshold = query.confidenceThreshold ?? 0.65;
-    const limit = query.limit ?? 5;
+    const threshold = query.confidenceThreshold ?? this.config.defaultConfidenceThreshold;
+    const limit = query.limit ?? this.config.defaultLimit;
     const rawText = query.text.trim();
 
     const normalized = normalizeQueryText(rawText);
     const meaningfulWords = normalized
       .split(' ')
-      .filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
+      .filter((w) => w.length >= 2 && !this.stopWords.has(w));
 
     // BỘ LỌC KIỂM TRA DỮ LIỆU ĐẦU VÀO (INPUT VALIDATION GUARD)
-    // Chặn câu hỏi rỗng hoặc chỉ toàn dấu câu/khoảng trắng, không ghi rác vào Knowledge Gap Queue
-    if (!rawText || rawText.length < 3 || meaningfulWords.length === 0) {
+    // Chặn câu hỏi rỗng hoặc ngắn hơn minQueryLength, không ghi rác vào Knowledge Gap Queue
+    if (!rawText || rawText.length < this.config.minQueryLength || meaningfulWords.length === 0) {
       return {
         isFound: false,
         topScore: 0,
         results: [],
-        message: 'Vui lòng nhập câu hỏi pháp lý cụ thể hơn để hệ thống tra cứu chính xác.',
+        message: SEARCH_MESSAGES.QUERY_TOO_SHORT,
         loggedToKnowledgeGap: false,
       };
     }
@@ -173,7 +227,7 @@ export class LegalSearchEngine {
         isFound: true,
         topScore,
         results: scoredResults.slice(0, limit),
-        message: 'Tìm thấy căn cứ pháp lý phù hợp trong kho văn bản.',
+        message: SEARCH_MESSAGES.SUCCESS,
         loggedToKnowledgeGap: false,
       };
     }
@@ -185,9 +239,7 @@ export class LegalSearchEngine {
       isFound: false,
       topScore,
       results: [],
-      message:
-        'Hệ thống chưa tìm thấy căn cứ pháp lý trong 5 bộ luật hiện hành để trả lời câu hỏi này một cách chính xác tuyệt đối. ' +
-        'Câu hỏi đã được tự động ghi nhận vào hàng đợi để Quản trị viên cập nhật bổ sung văn bản luật.',
+      message: SEARCH_MESSAGES.NOT_FOUND_FALLBACK,
       loggedToKnowledgeGap: true,
     };
   }

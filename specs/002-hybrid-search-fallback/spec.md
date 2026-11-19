@@ -106,3 +106,8 @@
 * **Given:** Hàng đợi có câu hỏi thiếu về đất đai và một câu hỏi spam.
 * **When:** Admin gọi `resolveGap()` và `ignoreGap()`.
 * **Then:** Trạng thái cập nhật chính xác (`resolved`, `ignored`), hàm `getStats()` phản ánh đúng số lượng.
+
+### Kịch bản 8: Không Hardcode — Tùy biến cấu hình trọng số & ngưỡng tin cậy
+* **Given:** Một engine được khởi tạo với cấu hình tùy biến (`defaultConfidenceThreshold = 0.95`, `minQueryLength = 5`).
+* **When:** Tìm kiếm một câu hỏi có điểm số 0.88.
+* **Then:** Hệ thống tuân thủ cấu hình tùy biến, kích hoạt Fallback Guard vì chưa đạt ngưỡng 0.95, chứng minh hệ thống không bị hardcode cứng.

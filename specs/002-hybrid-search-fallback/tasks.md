@@ -38,5 +38,6 @@
 - [x] `t4.1: Viết Unit Test cho Kịch bản 5 (Tiếng Việt không dấu) và Kịch bản 6 (Citation Booster) (Test ĐỎ)`
 - [x] `t4.2: Cài đặt removeVietnameseDiacritics() và extractBigrams() trong engine.ts để test XANH`
 - [x] `t4.3: Viết Integration Test specs/002-hybrid-search-fallback/tests/search-real-data.test.ts nạp 4.501 chunks thực tế`
-- [x] `t4.4: Chạy toàn bộ test suite dự án và đối soát lại toàn bộ spec.md`
+- [x] `t4.4: Trích xuất toàn bộ hằng số cấu hình (SearchEngineConfig, DEFAULT_SEARCH_CONFIG, GAP_QUEUE_CONFIG) tránh hardcode số ma thuật`
+- [x] `t4.5: Chạy toàn bộ test suite dự án và đối soát lại toàn bộ spec.md`
 *👉 Lệnh kiểm tra Lát 4:* `npm test`
