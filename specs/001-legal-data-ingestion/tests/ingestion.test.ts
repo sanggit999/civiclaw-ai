@@ -26,6 +26,12 @@ describe('001 - Legal Data Ingestion Pipeline', () => {
       expect(cleaned).toContain('Điều 6. Xử phạt người điều khiển xe mô tô, xe gắn máy');
       expect(cleaned).toContain('1. Phạt tiền từ 100.000 đồng đến 200.000 đồng.');
     });
+
+    it('Given văn bản chứa thực thể HTML &#32; hoặc &nbsp;, When cleanLegalText, Then giải mã sạch không làm trượt regex', () => {
+      const rawText = '&#32;2. Phạt tiền từ 600.000 đồng&nbsp;đến 800.000 đồng.';
+      const cleaned = cleanLegalText(rawText);
+      expect(cleaned).toBe('2. Phạt tiền từ 600.000 đồng đến 800.000 đồng.');
+    });
   });
 
   describe('Kịch bản 1: Bóc tách phân cấp Điều -> Khoản -> Điểm (parseLegalText)', () => {

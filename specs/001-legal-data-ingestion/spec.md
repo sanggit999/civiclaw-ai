@@ -1,63 +1,82 @@
-# Đặc tả Tính năng: Nạp & Phân Đoạn Dữ Liệu 5 Bộ Luật Nền Tảng (Legal Data Ingestion)
+# Bước 1: Product Review — 001: Legal Data Ingestion Pipeline
 
-## 1. Cái gì
-Xây dựng pipeline tiếp nhận, làm sạch, phân đoạn (Chunking) và gắn nhãn metadata cho 5 bộ văn bản quy phạm pháp luật Việt Nam nền tảng:
-1. **Nghị định 168/2024/NĐ-CP** (Xử phạt giao thông đường bộ & trừ điểm GPLX)
-2. **Luật Trật tự, an toàn giao thông đường bộ 2024** (`36/2024/QH15`)
-3. **Bộ luật Lao động 2019** (`45/2019/QH14`)
-4. **Luật Bảo hiểm xã hội 2024** (`41/2024/QH15`)
-5. **Luật Nhà ở 2023** (`27/2023/QH15`)
-
-Dữ liệu đầu vào kết hợp cả **bản PDF gốc lưu trữ** và **bản HTML/Text toàn văn sạch từ Cổng thông tin Chính phủ**.
-
-## 2. Vì sao
-* Dữ liệu luật là "nguồn chân lý" (Ground Truth) cho toàn bộ hệ thống RAG và AI Agent. Nếu bóc tách sai một câu, một từ hoặc bị lẫn số trang rác, AI sẽ tư vấn sai cho công dân.
-* Văn bản luật Việt Nam có cấu trúc ngữ nghĩa chặt chẽ (`Chương -> Điều -> Khoản -> Điểm`). Kỹ thuật phân đoạn theo phân cấp pháp lý (**Hierarchical Legal Chunking**) bảo đảm bảo toàn trọn vẹn ngữ cảnh của từng chế tài và mức phạt.
-
-## 3. Clarify & Giả định (Không đoán mò)
-
-> [!IMPORTANT]
-> Các câu hỏi làm rõ cốt lõi trước khi thiết kế giải pháp:
-
-- [x] **Q1: Nguồn dữ liệu đầu vào gồm những định dạng nào và lưu ở đâu?**
-  - *Trả lời:* 
-    * File PDF gốc đính kèm được tải về và lưu tại `data/raw/` làm tài liệu đối chiếu pháp lý chính thức.
-    * Nguồn bổ sung (Bản HTML/Text toàn văn sạch từ Cổng thông tin Chính phủ `vanban.chinhphu.vn`) được sử dụng làm nguồn chính để bóc tách text, nhằm tránh lỗi vỡ font, xô lệch bảng biểu và lẫn số trang của file PDF scan.
-- [x] **Q2: Chiến lược phân đoạn (Chunking Strategy) là gì?**
-  - *Trả lời:* Tuyệt đối không dùng Fixed-size chunking (cắt theo 500 hay 1000 ký tự). Bắt buộc phân đoạn theo đơn vị ngữ nghĩa pháp lý nhỏ nhất có thể trích dẫn được:
-    * Nếu Điều luật chia thành nhiều Khoản: Mỗi Khoản là một đơn vị chunk.
-    * Nếu Khoản chia thành nhiều Điểm quy định mức phạt cụ thể: Mỗi Điểm là một đơn vị chunk (kèm theo câu mở đầu của Khoản để giữ ngữ cảnh).
-- [x] **Q3: Chuỗi trích dẫn (`full_reference`) phải có cấu trúc như thế nào?**
-  - *Trả lời:* Chuẩn hóa theo cú pháp chuẩn của ngành luật:  
-    `[Điểm ...] [Khoản ...] [Điều ...] [Số hiệu văn bản]`  
-    *(Ví dụ: "Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP")*.
-- [x] **Q4: Dữ liệu bóc tách được lưu vào đâu ở module này?**
-  - *Trả lời:* Được chuẩn hóa và lưu trữ dạng JSON/JSONL trong `data/processed/` kèm đầy đủ metadata (`doc_number`, `domain`, `is_active`, `full_reference`, `content`, `keywords`), sẵn sàng nạp vào Vector Database ở module tìm kiếm tiếp theo.
+## 1. Vấn đề (Problem Statement)
+* **Đối tượng gặp vấn đề:** Quản trị viên dữ liệu pháp lý (Legal Data Admin) và Hệ thống AI RAG.
+* **Nỗi đau thực tế (Pain Point):**
+  - Văn bản luật Việt Nam rất dài (hàng trăm trang), có cấu trúc phân cấp chặt chẽ (`Chương -> Điều -> Khoản -> Điểm`). Nếu dùng các kỹ thuật phân đoạn thông thường (cắt theo độ dài 500 ký tự - Fixed-size chunking), câu chữ sẽ bị đứt gãy giữa chừng.
+  - Một Điểm luật vi phạm (ví dụ Điểm a: *"Chuyển làn không có tín hiệu"*) nếu bị tách rời độc lập mà mất đi tiêu đề của Điều (loại xe áp dụng) và lời dẫn của Khoản (khung tiền phạt) sẽ biến thành một câu cụt lủn vô nghĩa.
+  - File PDF chính thức ký số từ cổng Chính phủ (`datafiles.chinhphu.vn`) là file scan ảnh (112 trang ảnh quét), lẫn nhiều số trang, tiêu ngữ Quốc hiệu và các thực thể HTML (`&#32;`).
+* **Hậu quả nếu không làm:** AI tư vấn sai đối tượng (nhầm ô tô sang xe máy), sai khung tiền phạt, hoặc bị ảo giác do dữ liệu rác.
 
 ---
 
-## 4. Tiêu chí Nghiệm thu (Acceptance Criteria)
+## 2. Hành vi Mong muốn (Desired Behavior)
+1. **Làm sạch tự động:** Loại bỏ 100% Quốc hiệu, tiêu ngữ, số trang rác và giải mã sạch các thực thể HTML.
+2. **Bảo toàn ngữ cảnh 3 tầng (Contextual Chunking):** Mỗi chunk Điểm luật nhỏ nhất khi sinh ra bắt buộc phải mang theo:
+   `[Tiêu đề Điều - Đối tượng áp dụng] + [Khung tiền phạt của Khoản] + [Hành vi vi phạm của Điểm]`.
+3. **Chuẩn hóa chuỗi trích dẫn (`fullReference`):** Sinh chuỗi chuẩn mực ngành luật:  
+   `Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP`.
+4. **Chiến lược 2 nguồn (Dual-Source):** Lưu trữ PDF gốc để làm căn cứ đối chứng mộc đỏ; sử dụng toàn văn chuẩn hóa để bóc tách 4.501 chunks chất lượng cao.
 
-### Kịch bản 1: Bóc tách thành công một Điều luật có phân cấp Khoản và Điểm
-* **Given (Cho trước):** Đoạn văn bản luật quy định:
-  *"Điều 6. Xử phạt người điều khiển xe mô tô, xe gắn máy...*  
-  *Khoản 2. Phạt tiền từ 300.000 đồng đến 400.000 đồng đối với một trong các hành vi vi phạm sau đây:*  
-  *a) Không chấp hành hiệu lệnh, chỉ dẫn của biển báo hiệu, vạch kẻ đường..."*
-* **When (Khi):** Chạy hàm bóc tách Legal Chunker.
-* **Then (Thì):** 
-  * Tạo ra chunk có `full_reference` là: `"Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP"`.
-  * Nội dung `content` phải chứa trọn vẹn cả tiêu đề Điều, mức phạt của Khoản và hành vi của Điểm.
-  * Mảng `keywords` tự động nhận diện các từ khóa: `['xe mô tô', 'xe gắn máy', 'biển báo hiệu', 'vạch kẻ đường', '300.000', '400.000']`.
+---
 
-### Kịch bản 2: Gắn đúng Metadata và Lĩnh vực (Domain)
-* **Given (Cho trước):** Văn bản có số hiệu `168/2024/NĐ-CP`.
-* **When (Khi):** Pipeline nạp dữ liệu xử lý văn bản.
-* **Then (Thì):** Văn bản được gán chính xác:
-  * `domain = 'TRAFFIC'`
-  * `is_active = true` (vì ngày hết hạn chưa đến)
-  * `doc_number = '168/2024/NĐ-CP'`.
+## 3. Bản Dựng Giao Diện & Tương Tác (Mock-up)
 
-### Kịch bản 3: Làm sạch rác văn bản (Clean Text)
-* **Given (Cho trước):** Văn bản thô có chứa các dòng rác như: *"Trang 15/120"*, *"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"*, *"Độc lập - Tự do - Hạnh phúc"*, hoặc khoảng trắng thừa.
-* **When (Khi):** Chạy qua bộ tiền xử lý (Pre-processor).
-* **Then (Thì):** Các dòng rác tiêu ngữ và số trang bị loại bỏ 100%, chỉ giữ lại nội dung pháp lý thuần khiết.
+### Mock-up Web Admin: Màn hình Giám Sát & Nạp Dữ Liệu Luật
+```text
++-----------------------------------------------------------------------------------------+
+| CIVICLAW AI - QUẢN LÝ DỮ LIỆU PHÁP LUẬT (LEGAL DATA INGESTION)                          |
++-----------------------------------------------------------------------------------------+
+| [Tải lên PDF/Text] -> Chọn file: 168_2024_ND-CP.txt | Lĩnh vực: [GIAO THÔNG ▼]         |
+|                                                                                         |
+| TIẾN TRÌNH XỬ LÝ:                                                                       |
+| [✓] 1. Làm sạch tiêu ngữ & giải mã thực thể HTML ................ (Đã lọc 112 trang)    |
+| [✓] 2. Bóc tách phân cấp Chương -> Điều -> Khoản -> Điểm ......... (1.051 Chunks)       |
+| [✓] 3. Trích xuất từ khóa mức phạt & chủ thể ..................... (4.200 Từ khóa)     |
+|                                                                                         |
+| BẢN XEM TRƯỚC CHUNK ĐIỂN HÌNH (QUALITY ASSURANCE):                                      |
+| +-------------------------------------------------------------------------------------+ |
+| | ID: 168_2024_NĐ-CP_Điều_6_Khoản_2_Điểm_a                                            | |
+| | Trích dẫn: Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP                           | |
+| | Ngữ cảnh Điều: Điều 6. Xử phạt người điều khiển xe ô tô...                          | |
+| | Mức phạt Khoản: 2. Phạt tiền từ 600.000 đồng đến 800.000 đồng...                    | |
+| | Hành vi Điểm: a) Chuyển làn đường không đúng nơi cho phép hoặc không có tín hiệu... | |
+| | Từ khóa bắt được: ["600.000 đồng", "800.000 đồng", "xe ô tô", "ô tô"]                | |
+| +-------------------------------------------------------------------------------------+ |
+| [Lưu vào Kho Dữ Liệu Processed]  [Tải Xuất Bản JSON]                                     |
++-----------------------------------------------------------------------------------------+
+```
+
+---
+
+## 4. Làm Rõ & Giả Định (Clarify - Cấm đoán mò)
+- [x] **Q1: Nguồn dữ liệu đầu vào gồm những định dạng nào và lưu ở đâu?**
+  - *Trả lời:* File PDF gốc đính kèm lưu tại `data/raw/*.pdf` làm chứng cứ pháp lý. Nguồn toàn văn bổ sung sạch (từ Cổng thông tin Chính phủ / Công Báo) lưu tại `data/raw/*.txt` làm nguồn bóc tách trực tiếp.
+- [x] **Q2: Chiến lược phân đoạn (Chunking Strategy) là gì?**
+  - *Trả lời:* Phân đoạn theo phân cấp pháp lý ngữ nghĩa nhỏ nhất: Điều đơn lẻ -> Khoản -> Điểm (có kèm ngữ cảnh tiêu đề Điều và mức phạt Khoản). Tuyệt đối không cắt theo số ký tự cố định.
+- [x] **Q3: Cú pháp trích dẫn (`fullReference`) được chuẩn hóa ra sao?**
+  - *Trả lời:* `[Điểm ...] [Khoản ...] [Điều ...] [Tên/Số hiệu văn bản]` (Ví dụ: `Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP`).
+- [x] **Q4: Dữ liệu bóc tách được lưu vào đâu?**
+  - *Trả lời:* Định dạng JSON có cấu trúc trong thư mục `data/processed/<id>.chunks.json`.
+
+---
+
+## 5. Tiêu chí Nghiệm thu (Acceptance Criteria / BDD)
+
+### Kịch bản 1: Bóc tách thành công một Điều luật có phân cấp Khoản và Điểm (Happy Path)
+* **Given:** Văn bản quy định mức phạt ô tô chuyển làn không xi nhan tại Điểm a Khoản 2 Điều 6.
+* **When:** Chạy `parseLegalText(cleanedText, metadata)`.
+* **Then:** 
+  * Chunk tạo ra có `fullReference = "Điểm a Khoản 2 Điều 6 Nghị định 168/2024/NĐ-CP"`.
+  * `content` chứa đầy đủ 3 phần: Tiêu đề Điều 6, mức phạt Khoản 2 (600k - 800k), hành vi Điểm a.
+  * `keywords` tự động bắt đúng: `["600.000 đồng", "800.000 đồng", "xe ô tô", "ô tô"]`.
+
+### Kịch bản 2: Làm sạch thực thể HTML và dòng rác tiêu ngữ (Cleaner Resilience)
+* **Given:** Văn bản thô dính tiêu ngữ Quốc hiệu, dòng số trang *"Trang 12/120"* và các ký tự thực thể như `&#32;2.` hoặc `&nbsp;`.
+* **When:** Chạy qua `cleanLegalText(rawText)`.
+* **Then:** Tiêu ngữ, số trang bị xóa hoàn toàn; thực thể `&#32;` được giải mã thành dấu cách, không làm trượt regex nhận diện Khoản.
+
+### Kịch bản 3: Xử lý thành công toàn bộ 5 bộ luật thực tế (Full Real Data Integration)
+* **Given:** 5 file văn bản toàn văn trong `data/raw/` (`168_2024_ND-CP`, `36_2024_QH15`, `45_2019_QH14`, `41_2024_QH15`, `27_2023_QH15`).
+* **When:** Chạy quy trình bóc tách hàng loạt.
+* **Then:** Sinh ra tổng cộng **4.501 chunks** không lỗi, lưu trữ đầy đủ tại `data/processed/`.
