@@ -9,6 +9,11 @@ export class SseStreamWriter {
 
   constructor(private res: ServerResponse) {
     this.initHeaders();
+    if (typeof this.res.on === 'function') {
+      this.res.on('close', () => {
+        this.isClosed = true;
+      });
+    }
   }
 
   /**
@@ -28,10 +33,17 @@ export class SseStreamWriter {
   }
 
   /**
+   * Kiểm tra xem kết nối client đã bị đóng hay ngắt kết nối giữa chừng
+   */
+  isDisconnected(): boolean {
+    return this.isClosed || Boolean(this.res.destroyed) || Boolean(this.res.writableEnded);
+  }
+
+  /**
    * Gửi một sự kiện có tên (Named SSE Event)
    */
   sendEvent(event: string, data: unknown): void {
-    if (this.isClosed) return;
+    if (this.isDisconnected()) return;
     const payload = typeof data === 'string' ? data : JSON.stringify(data);
     this.res.write(`event: ${event}\ndata: ${payload}\n\n`);
   }
@@ -54,7 +66,7 @@ export class SseStreamWriter {
    * Gửi sự kiện lỗi (Error event)
    */
   sendError(error: unknown): void {
-    if (this.isClosed) return;
+    if (this.isDisconnected()) return;
     const errObj = error instanceof Error
       ? { message: error.message, stack: error.stack }
       : error;
@@ -66,7 +78,7 @@ export class SseStreamWriter {
    * Đóng luồng SSE an toàn
    */
   close(): void {
-    if (this.isClosed) return;
+    if (this.isDisconnected()) return;
     this.isClosed = true;
     this.res.end();
   }

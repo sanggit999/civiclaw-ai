@@ -12,7 +12,8 @@
     "download:pdfs": "node scripts/download-official-pdfs.mjs",
     "download:texts": "node scripts/fetch-clean-text.mjs",
     "ingest": "npm run build && node scripts/run-all-ingestion.mjs",
-    "upload:supabase": "node scripts/upload-chunks-to-supabase.mjs"
+    "upload:supabase": "node scripts/upload-chunks-to-supabase.mjs",
+    "start:api": "npm run build && node scripts/start-gateway.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

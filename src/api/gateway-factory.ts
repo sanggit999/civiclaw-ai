@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { ApiGatewayServer } from './gateway-server.js';
 import { HttpRouter } from './router.js';
 import { HealthController } from './controllers/health-controller.js';
@@ -12,6 +13,7 @@ import { GatewayConfig } from './types.js';
 
 export interface GatewayDependencies {
   config?: Partial<GatewayConfig>;
+  supabaseClient?: SupabaseClient;
   ragPipeline?: IContextualRagPipeline;
   lifecycleManager?: ContractLifecycleManager;
   versionStore?: IContractVersionStore;
@@ -25,7 +27,7 @@ export function createApiGateway(deps?: GatewayDependencies): ApiGatewayServer {
   const router = new HttpRouter(deps?.config);
 
   // 1. Health Controller
-  const healthController = new HealthController();
+  const healthController = new HealthController(deps?.supabaseClient);
   router.register('GET', '/api/v1/health', (req, res) => healthController.handleHealth(req, res));
 
   // 2. Chat Controller (nếu có pipeline)

@@ -81,9 +81,13 @@ export class ChatController {
 
       // 4. Stream từng phần câu trả lời (token streaming mô phỏng câu trả lời hoàn chỉnh)
       const answer = result.answer;
-      // Chia thành các chunks nhỏ (khoảng 15-20 ký tự) để mô phỏng streaming mượt mà ra giao diện
+      // Chia thành các chunks nhỏ (khoảng 20 ký tự) để mô phỏng streaming mượt mà ra giao diện
       const chunkSize = 20;
       for (let i = 0; i < answer.length; i += chunkSize) {
+        if (sse.isDisconnected()) {
+          // Client đã đóng tab / ngắt kết nối giữa chừng, dừng stream ngay lập tức
+          break;
+        }
         const chunk = answer.slice(i, i + chunkSize);
         sse.sendToken(chunk);
       }
