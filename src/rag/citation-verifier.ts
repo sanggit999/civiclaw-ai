@@ -14,7 +14,7 @@ import {
  * Lưu ý: Giới hạn nhận diện tên văn bản không nuốt các từ nối (và, hoặc, theo...) hoặc dấu câu.
  */
 const CITATION_REGEX =
-  /(?:(Điểm\s+[a-zđĐ0-9]+)\s+)?(?:(Khoản\s+\d+)\s+)?(Điều\s+\d+)(?:\s+(Nghị định\s+(?:số\s+)?[\d\/A-ZĐa-z0-9\-]+|(?:Bộ luật|Luật|Thông tư)\s+[^,\.\n;\(\)]+?(?=\s+(?:và|hoặc|theo|về|ngày|được|[,\.\n;\(\)])|$)))?/gi;
+  /(?:(Điểm\s+[a-zđĐ0-9]+)\s+)?(?:(Khoản\s+\d+)\s+)?(Điều\s+\d+)(?:\s+(Nghị định\s+(?:số\s+)?[\d\/A-ZĐa-z0-9\-]+|(?:Bộ luật|Luật|Thông tư)\s+[^,\.\n;\(\)]+?(?=\s+(?:và|hoặc|theo|về|ngày|được)|[,\.\n;\(\)]|$)))?/gi;
 
 /**
  * Chuẩn hóa số hiệu văn bản (bỏ khoảng trắng thừa, chữ hoa)

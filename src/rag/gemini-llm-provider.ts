@@ -4,12 +4,14 @@ export interface GeminiConfig {
   apiKey?: string;
   modelName?: string;
   apiEndpoint?: string;
+  timeoutMs?: number;
   fetchFn?: typeof fetch;
 }
 
 export const DEFAULT_GEMINI_CONFIG = {
   modelName: 'gemini-3.8-flash',
   apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+  timeoutMs: 20000, // 20 giây timeout để bảo đảm trải nghiệm người dùng
 };
 
 /**
@@ -20,12 +22,14 @@ export class GeminiLlmProvider implements ILlmProvider {
   private apiKey: string;
   private modelName: string;
   private apiEndpoint: string;
+  private timeoutMs: number;
   private fetchFn: typeof fetch;
 
   constructor(config?: GeminiConfig) {
     this.apiKey = config?.apiKey || process.env.GEMINI_API_KEY || '';
     this.modelName = config?.modelName || DEFAULT_GEMINI_CONFIG.modelName;
     this.apiEndpoint = config?.apiEndpoint || DEFAULT_GEMINI_CONFIG.apiEndpoint;
+    this.timeoutMs = config?.timeoutMs || DEFAULT_GEMINI_CONFIG.timeoutMs;
     this.fetchFn = config?.fetchFn || globalThis.fetch;
   }
 
@@ -59,14 +63,28 @@ export class GeminiLlmProvider implements ILlmProvider {
       };
     }
 
-    const response = await this.fetchFn(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': this.apiKey, // Header xác thực chuẩn Enterprise Google API
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    let response: Response;
+    try {
+      response = await this.fetchFn(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey, // Header xác thực chuẩn Enterprise Google API
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error(`Gemini API Timeout: Quá thời gian chờ phản hồi (${this.timeoutMs}ms)`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
