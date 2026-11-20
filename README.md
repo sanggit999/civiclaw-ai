@@ -38,6 +38,12 @@ civiclaw-ai/
 ├── package.json                         # Dependencies & Scripts điều khiển
 ├── vitest.config.ts                     # Cấu hình kiểm thử tự động
 │
+├── admin/                               # 🖥️ CỔNG QUẢN TRỊ WEB ADMIN (ASTRYX & NEXT.JS 15)
+│   ├── app/                             # Next.js App Router (Dashboard, Laws, Gaps, Configs)
+│   ├── components/                      # Astryx Components (AdminShell, StatCard - Zero <div>)
+│   ├── lib/                             # Central API Client & Proxy
+│   └── astryx-themes.ts                 # Cấu hình theme trung tính @astryxdesign/theme-neutral
+│
 ├── docs/                                # 📖 TÀI LIỆU ĐẶC TẢ SẢN PHẨM (BA PERSPECTIVE)
 │   ├── PRD.md                           # Tổng quan bài toán, mục tiêu, 2 giai đoạn phát triển
 │   └── references/                      # Văn bản đặc tả gốc lưu trữ
@@ -100,14 +106,31 @@ npm install
 ```
 
 ### 2. Kiểm thử toàn bộ hệ thống
-Chạy test suite tự động bằng Vitest:
+Chạy test suite tự động bằng Vitest (146 tests):
 ```bash
 npm test
 # hoặc kiểm thử liên tục khi code:
 npm run test:watch
 ```
 
-### 3. Đồng bộ cấu hình AI
+### 3. Khởi chạy Central API Gateway (Port 3000)
+```bash
+npm run start:api
+```
+Kiểm tra sức khỏe hệ thống:
+```bash
+curl http://localhost:3000/api/v1/health
+```
+
+### 4. Khởi chạy Cổng Quản Trị Web Admin (Port 3001)
+Ứng dụng Web Admin xây dựng trên **Next.js 15** và hệ thống thiết kế **Astryx Design System**:
+```bash
+cd admin
+npm run dev
+# Truy cập tại: http://localhost:3001
+```
+
+### 5. Đồng bộ cấu hình AI
 Sau khi thêm/sửa bất kỳ file nào trong `.claude/`:
 ```bash
 npm run sync
