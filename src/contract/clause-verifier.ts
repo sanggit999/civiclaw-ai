@@ -1,12 +1,36 @@
 import { ClauseAuditFinding, ContractCategory, ContractClause, RiskLevel } from './types.js';
+import { ContractPolicy } from './policy-types.js';
 import { StatutoryLimitChecker } from './statutory-limit-checker.js';
+import { DEFAULT_LABOR_POLICY, DEFAULT_LOAN_POLICY, DEFAULT_RENTAL_POLICY } from './policy-provider.js';
 
 /**
  * Tầng Đánh giá Tính Pháp lý & Rủi ro 3 Mức cho Điều khoản Hợp đồng
- * Đối chiếu với các quy tắc cấm và án lệ pháp luật Việt Nam.
+ * Hoàn toàn động: Nhận chính sách từ Dynamic ContractPolicy (hoặc từ Database),
+ * không lưu chuỗi quy định pháp luật cố định trong hàm.
  */
 export class ClauseLegalityVerifier {
-  static verifyClause(clause: ContractClause, category: ContractCategory): ClauseAuditFinding {
+  static verifyClause(
+    clause: ContractClause,
+    policyOrCategory: ContractCategory | ContractPolicy
+  ): ClauseAuditFinding {
+    let policy: ContractPolicy;
+    if (typeof policyOrCategory === 'string') {
+      if (policyOrCategory === 'labor') policy = DEFAULT_LABOR_POLICY;
+      else if (policyOrCategory === 'rental') policy = DEFAULT_RENTAL_POLICY;
+      else if (policyOrCategory === 'civil_loan') policy = DEFAULT_LOAN_POLICY;
+      else {
+        policy = {
+          category: policyOrCategory,
+          title: `Chính sách ${policyOrCategory}`,
+          limits: [],
+          prohibitions: [],
+          mandatoryClauses: [],
+        };
+      }
+    } else {
+      policy = policyOrCategory;
+    }
+
     const fullText = `${clause.title}\n${clause.text}`;
     const lower = fullText.toLowerCase();
 
@@ -37,123 +61,63 @@ export class ClauseLegalityVerifier {
       }
     };
 
-    // 1. Kiểm tra các giới hạn định lượng qua StatutoryLimitChecker
-    if (clause.category === 'PROBATION' || lower.includes('thử việc')) {
-      const probationCheck = StatutoryLimitChecker.checkLaborProbation(fullText);
-      if (probationCheck.isViolation) {
+    // 1. Kiểm tra các giới hạn định lượng qua các rules trong policy.limits
+    for (const limitRule of policy.limits) {
+      if (limitRule.metric === 'probation_days') {
+        if (clause.category === 'PROBATION' || lower.includes('thử việc')) {
+          const check = StatutoryLimitChecker.checkLaborProbation(fullText, limitRule);
+          if (check.isViolation) {
+            registerViolation(check.riskLevel, check.statutoryCitation, check.reason, check.suggestedWording);
+          }
+        }
+      } else if (limitRule.metric === 'loan_interest_annual') {
+        if (policy.category === 'civil_loan' || lower.includes('lãi suất') || lower.includes('tiền lãi')) {
+          const check = StatutoryLimitChecker.checkCivilLoanInterest(fullText, limitRule);
+          if (check.isViolation) {
+            registerViolation(check.riskLevel, check.statutoryCitation, check.reason, check.suggestedWording);
+          }
+        }
+      } else if (limitRule.metric === 'advance_notice_penalty') {
+        if (clause.category === 'TERMINATION' || lower.includes('chấm dứt') || lower.includes('nghỉ việc')) {
+          const check = StatutoryLimitChecker.checkAdvanceNotice(fullText, limitRule);
+          if (check.isViolation) {
+            registerViolation(check.riskLevel, check.statutoryCitation, check.reason, check.suggestedWording);
+          }
+        }
+      }
+    }
+
+    // 2. Kiểm tra các quy tắc cấm/bất lợi trong policy.prohibitions
+    for (const prohibition of policy.prohibitions) {
+      // Tiền kiểm tra phủ định (Negative Guard): nếu có từ khóa phủ định thì bỏ qua
+      const isNegated = prohibition.negativeKeywords?.some((negKw) => lower.includes(negKw.toLowerCase()));
+      if (isNegated) {
+        continue;
+      }
+
+      // Kiểm tra từ khóa chính
+      const hasPrimary = prohibition.keywords.some((kw) => lower.includes(kw.toLowerCase()));
+
+      // Kiểm tra từ khóa phụ (nếu có yêu cầu kết hợp)
+      let isTriggered = false;
+      if (prohibition.secondaryKeywords && prohibition.secondaryKeywords.length > 0) {
+        const hasSecondary = prohibition.secondaryKeywords.some((sk) => lower.includes(sk.toLowerCase()));
+        isTriggered = hasPrimary && hasSecondary;
+      } else {
+        isTriggered = hasPrimary;
+      }
+
+      if (isTriggered) {
         registerViolation(
-          probationCheck.riskLevel,
-          probationCheck.statutoryCitation,
-          probationCheck.reason,
-          probationCheck.suggestedWording
+          prohibition.riskLevel,
+          prohibition.statutoryCitation,
+          prohibition.reasonTemplate,
+          prohibition.suggestedWordingTemplate
         );
       }
     }
 
-    if (category === 'civil_loan' || lower.includes('lãi suất') || lower.includes('tiền lãi')) {
-      const loanCheck = StatutoryLimitChecker.checkCivilLoanInterest(fullText);
-      if (loanCheck.isViolation) {
-        registerViolation(
-          loanCheck.riskLevel,
-          loanCheck.statutoryCitation,
-          loanCheck.reason,
-          loanCheck.suggestedWording
-        );
-      }
-    }
-
-    if (clause.category === 'TERMINATION' || lower.includes('chấm dứt') || lower.includes('nghỉ việc')) {
-      const noticeCheck = StatutoryLimitChecker.checkAdvanceNotice(fullText);
-      if (noticeCheck.isViolation) {
-        registerViolation(
-          noticeCheck.riskLevel,
-          noticeCheck.statutoryCitation,
-          noticeCheck.reason,
-          noticeCheck.suggestedWording
-        );
-      }
-    }
-
-    // 2. Kiểm tra các vi phạm pháp luật cấm trong Hợp đồng Lao động (BLLĐ 2019)
-    if (category === 'labor' || lower.includes('người lao động') || lower.includes('công ty')) {
-      // Vi phạm 1: Giữ bản chính văn bằng, chứng chỉ, giấy tờ tùy thân (Điều 17)
-      // Thêm Negative Guard (phủ định): Không cảnh báo nếu người lao động "tự lưu giữ" hoặc "chỉ nộp bản sao"
-      const isRetainingNegated =
-        lower.includes('tự lưu giữ') ||
-        lower.includes('không giữ') ||
-        lower.includes('chỉ nộp bản sao') ||
-        lower.includes('chỉ thu bản sao') ||
-        lower.includes('chỉ giữ bản sao');
-
-      if (
-        !isRetainingNegated &&
-        (lower.includes('bản chính') || lower.includes('bằng gốc') || lower.includes('giấy tờ gốc')) &&
-        (lower.includes('giữ') || lower.includes('nộp') || lower.includes('lưu giữ'))
-      ) {
-        registerViolation(
-          'RED_ILLEGAL',
-          'Khoản 1 Điều 17 Bộ luật Lao động 2019',
-          'Khoản 1 Điều 17 Bộ luật Lao động 2019 nghiêm cấm người sử dụng lao động giữ bản chính giấy tờ tùy thân, văn bằng, chứng chỉ của người lao động. Điều khoản này bị coi là vô hiệu theo Điều 49 BLLĐ 2019.',
-          'Kính đề nghị Công ty sửa đổi: Người lao động chỉ nộp bản sao công chứng để đối chiếu hồ sơ, bản chính do người lao động tự lưu giữ theo đúng quy định tại Khoản 1 Điều 17 Bộ luật Lao động 2019.'
-        );
-      }
-
-      // Vi phạm 2: Phạt tiền, trừ lương thay kỷ luật lao động (Điều 127)
-      if (
-        (lower.includes('phạt tiền') || lower.includes('trừ lương') || lower.includes('cắt lương') || lower.includes('trực tiếp vào lương')) &&
-        (lower.includes('kpi') || lower.includes('đi muộn') || lower.includes('vi phạm') || lower.includes('nội quy'))
-      ) {
-        registerViolation(
-          'RED_ILLEGAL',
-          'Khoản 2 Điều 127 Bộ luật Lao động 2019',
-          'Khoản 2 Điều 127 Bộ luật Lao động 2019 nghiêm cấm dùng hình thức phạt tiền, cắt lương thay việc xử lý kỷ luật lao động.',
-          'Đề nghị bãi bỏ hình thức phạt tiền/cắt lương, áp dụng các biện pháp xử lý kỷ luật lao động theo đúng trình tự tại Điều 124 Bộ luật Lao động 2019.'
-        );
-      }
-
-      // Vi phạm 3: Cam kết không cạnh tranh (Non-compete) bất bình đẳng, không có đền bù
-      if (
-        (lower.includes('không làm việc cho') || lower.includes('không cạnh tranh') || lower.includes('cùng ngành')) &&
-        (lower.includes('năm') || lower.includes('tháng') || lower.includes('đối thủ'))
-      ) {
-        registerViolation(
-          'YELLOW_WARNING',
-          'Điều 35 Hiến pháp 2013 và Điều 5 Bộ luật Lao động 2019',
-          'Điều khoản hạn chế quyền tự do làm việc của công dân (Điều 35 Hiến pháp 2013 và Điều 5 BLLĐ 2019). Để cam kết bảo mật & không cạnh tranh có hiệu lực công bằng, cần đi kèm khoản hỗ trợ tài chính cho người lao động.',
-          'Kính đề nghị bổ sung khoản hỗ trợ tài chính hàng tháng trong thời gian người lao động thực hiện cam kết không làm việc cho các đơn vị cạnh tranh trực tiếp.'
-        );
-      }
-    }
-
-    // 3. Kiểm tra các rủi ro trong Hợp đồng Thuê nhà (Luật Nhà ở 2023 & BLDS 2015)
-    if (category === 'rental' || lower.includes('thuê nhà') || lower.includes('tiền thuê')) {
-      // Rủi ro 1: Tự ý tăng giá thuê bất kỳ lúc nào
-      if (
-        lower.includes('tự ý tăng') ||
-        lower.includes('tăng tiền thuê bất kỳ') ||
-        lower.includes('điều chỉnh giá thuê bất kỳ') ||
-        (lower.includes('thị trường gia tăng') && lower.includes('tăng'))
-      ) {
-        registerViolation(
-          'YELLOW_WARNING',
-          'Điều 165 Luật Nhà ở 2023',
-          'Theo Điều 165 Luật Nhà ở 2023, giá thuê nhà do các bên thỏa thuận và chỉ được điều chỉnh khi có thỏa thuận rõ ràng hoặc đáp ứng các điều kiện cụ thể trong hợp đồng.',
-          'Kính đề nghị sửa đổi: Giá thuê nhà ổn định trong suốt thời hạn hợp đồng. Mọi việc điều chỉnh giá thuê chỉ được thực hiện khi hai bên cùng đồng thuận bằng văn bản phụ lục hợp đồng.'
-        );
-      }
-
-      // Rủi ro 2: Tịch thu cọc bất công
-      if (lower.includes('tịch thu') && (lower.includes('tiền cọc') || lower.includes('đặt cọc'))) {
-        registerViolation(
-          'YELLOW_WARNING',
-          'Điều 328 Bộ luật Dân sự 2015',
-          'Điều khoản tịch thu toàn bộ tiền cọc đặt người thuê vào thế bất lợi nghiêm trọng. Tiền cọc phải được hoàn trả nếu bên thuê đã hoàn thành nghĩa vụ bàn giao nhà và chi phí.',
-          'Đề nghị sửa đổi: Tiền đặt cọc sẽ được hoàn trả đầy đủ cho Bên thuê trong vòng 03 ngày làm việc kể từ ngày thanh lý hợp đồng và bàn giao hiện trạng nhà.'
-        );
-      }
-    }
-
-    // 4. Mặc định an toàn nếu không ghi nhận bất kỳ vi phạm nào
+    // 3. Kết luận
     if (overallRisk === 'GREEN_SAFE') {
       return {
         clauseId: clause.id,
