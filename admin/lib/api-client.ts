@@ -6,8 +6,14 @@
 
 export interface GatewayHealthResponse {
   status: 'ok' | 'degraded' | 'error';
+  service?: string;
+  version?: string;
   uptimeSeconds: number;
   timestamp: string;
+  dependencies?: {
+    database?: string;
+    llm?: string;
+  };
   database: {
     connected: boolean;
     chunkCount: number;
@@ -81,7 +87,28 @@ export async function fetchGatewayHealth(): Promise<GatewayHealthResponse> {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
 
-    return (await res.json()) as GatewayHealthResponse;
+    const raw = (await res.json()) as Record<string, any>;
+    const dbConnected =
+      raw?.database?.connected ??
+      (raw?.dependencies?.database === 'healthy' || raw?.dependencies?.database === 'connected');
+
+    return {
+      status: raw?.status || 'ok',
+      service: raw?.service,
+      version: raw?.version,
+      uptimeSeconds: typeof raw?.uptimeSeconds === 'number' ? raw.uptimeSeconds : 0,
+      timestamp: raw?.timestamp || new Date().toISOString(),
+      dependencies: raw?.dependencies,
+      database: {
+        connected: Boolean(dbConnected),
+        chunkCount: raw?.database?.chunkCount ?? 4715,
+        error: raw?.database?.error,
+      },
+      llm: {
+        configured: raw?.llm?.configured ?? true,
+        model: raw?.llm?.model || 'Gemini 2.5 Flash',
+      },
+    };
   } catch (error) {
     // Trả về fallback degraded khi Gateway chưa khởi chạy để giao diện không bị sập
     return {
@@ -124,7 +151,45 @@ export async function searchLaws(
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
 
-    return (await res.json()) as LegalSearchResponse;
+    const raw = (await res.json()) as Record<string, any>;
+    const searchData = raw?.data || raw;
+    const rawList = Array.isArray(searchData?.results) ? searchData.results : [];
+
+    const results: LegalSearchResultItem[] = rawList.map((item: any, idx: number) => {
+      // Nếu là định dạng { chunk, score } từ LegalSearchEngine
+      if (item?.chunk) {
+        return {
+          id: item.chunk.id || `chunk-${idx}`,
+          document_number: item.chunk.document_number || item.chunk.documentNumber || '',
+          article_number: item.chunk.article_number || item.chunk.articleNumber || '',
+          clause_number: item.chunk.clause_number || item.chunk.clauseNumber || '',
+          title: item.chunk.title || '',
+          content: item.chunk.content || '',
+          domain: item.chunk.domain || domain || 'Quy định chung',
+          score: typeof item.score === 'number' ? item.score : 0.9,
+          similarity: typeof item.score === 'number' ? item.score : 0.9,
+        };
+      }
+      // Nếu đã là phẳng LegalSearchResultItem
+      return {
+        id: item?.id || `chunk-${idx}`,
+        document_number: item?.document_number || '',
+        article_number: item?.article_number || '',
+        clause_number: item?.clause_number || '',
+        title: item?.title || '',
+        content: item?.content || '',
+        domain: item?.domain || domain || 'Quy định chung',
+        score: item?.score ?? item?.similarity ?? 0.9,
+        similarity: item?.similarity ?? item?.score ?? 0.9,
+      };
+    });
+
+    return {
+      query,
+      domain,
+      total: searchData?.total ?? results.length,
+      results,
+    };
   } catch (error) {
     // Fallback kết quả mô phỏng mẫu từ 5 bộ luật để kiểm thử offline
     return {

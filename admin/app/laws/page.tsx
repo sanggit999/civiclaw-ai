@@ -37,8 +37,8 @@ export default function LawsBrowserPage() {
     setLoading(true);
     try {
       const data = await searchLaws(searchQuery, searchDomain || undefined, 15);
-      setResults(data.results);
-      setTotal(data.total);
+      setResults(Array.isArray(data?.results) ? data.results : []);
+      setTotal(data?.total ?? (Array.isArray(data?.results) ? data.results.length : 0));
     } catch {
       setResults([]);
       setTotal(0);
@@ -64,7 +64,7 @@ export default function LawsBrowserPage() {
     { value: 'Dân sự', label: 'Bộ luật Dân sự 2015' },
   ];
 
-  const tableData: LawRow[] = results.map((item) => ({
+  const tableData: LawRow[] = (results || []).map((item) => ({
     id: item.id,
     document_number: item.document_number,
     article_clause: `${item.article_number || ''} ${item.clause_number || ''}`.trim() || 'Toàn văn',

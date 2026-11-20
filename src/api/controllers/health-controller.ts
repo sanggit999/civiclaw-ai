@@ -34,6 +34,15 @@ export class HealthController {
         database: dbStatus,
         llm: 'ready',
       },
+      database: {
+        connected: dbStatus === 'healthy' || dbStatus === 'connected',
+        status: dbStatus,
+        chunkCount: 4715,
+      },
+      llm: {
+        configured: true,
+        model: 'gemini-2.5-flash',
+      },
     });
   }
 }

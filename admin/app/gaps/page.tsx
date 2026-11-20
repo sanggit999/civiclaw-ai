@@ -36,7 +36,7 @@ export default function KnowledgeGapsPage() {
   const loadData = async () => {
     setLoading(true);
     const data = await fetchUnresolvedQueries();
-    setItems(data);
+    setItems(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
@@ -47,15 +47,15 @@ export default function KnowledgeGapsPage() {
   const handleUpdateStatus = async (id: string, newStatus: 'resolved' | 'ignored') => {
     await updateUnresolvedQueryStatus(id, newStatus);
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+      (prev || []).map((item) => (item.id === id ? { ...item, status: newStatus } : item))
     );
   };
 
-  const unreviewedCount = items.filter((i) => i.status === 'unreviewed').length;
-  const resolvedCount = items.filter((i) => i.status === 'resolved').length;
-  const totalHits = items.reduce((sum, i) => sum + i.hit_count, 0);
+  const unreviewedCount = (items || []).filter((i) => i.status === 'unreviewed').length;
+  const resolvedCount = (items || []).filter((i) => i.status === 'resolved').length;
+  const totalHits = (items || []).reduce((sum, i) => sum + i.hit_count, 0);
 
-  const tableData: GapRow[] = items.map((item) => ({
+  const tableData: GapRow[] = (items || []).map((item) => ({
     id: item.id,
     query_text: item.query_text,
     domain: item.domain || 'Chưa phân loại',

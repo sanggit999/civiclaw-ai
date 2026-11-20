@@ -141,7 +141,7 @@ export default function DashboardPage() {
           <StatCard
             title="Trạng thái Central API Gateway"
             value={health?.status === 'ok' ? 'Đang Hoạt Động' : 'Chế độ Cục bộ'}
-            subtitle={`Uptime: ${health ? Math.floor(health.uptimeSeconds) : 0}s | Cổng: 3000`}
+            subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | Cổng: 3000`}
             badgeLabel={health?.status === 'ok' ? 'KẾT NỐI SỐNG' : 'DỰ PHÒNG'}
             badgeVariant={health?.status === 'ok' ? 'success' : 'warning'}
           />
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         <StackItem size="fill">
           <StatCard
             title="Kho Dữ Liệu Pháp Luật"
-            value={`${health?.database.chunkCount || 4715} Chunks`}
+            value={`${health?.database?.chunkCount ?? 4715} Chunks`}
             subtitle="5 Bộ luật: Giao thông, Lao động, BHXH, Nhà ở, Dân sự"
             badgeLabel="PostgreSQL pgvector"
             badgeVariant="teal"
@@ -158,7 +158,7 @@ export default function DashboardPage() {
         <StackItem size="fill">
           <StatCard
             title="Mô hình Ngôn ngữ Lớn (LLM)"
-            value={health?.llm.model || 'Gemini 2.5 Flash'}
+            value={health?.llm?.model ?? 'Gemini 2.5 Flash'}
             subtitle="100% Trích dẫn Nguồn luật - Zero Bịa đặt"
             badgeLabel="Google DeepMind"
             badgeVariant="blue"
