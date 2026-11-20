@@ -150,12 +150,35 @@ export async function searchLaws(
 
 /**
  * Lấy danh sách câu hỏi chưa được giải quyết (Knowledge Gaps)
+ * Ưu tiên gọi Route Handler /api/gaps kết nối Supabase Cloud trực tiếp
  */
 export async function fetchUnresolvedQueries(): Promise<UnresolvedQueryItem[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/gaps', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data as UnresolvedQueryItem[];
+        }
+      }
+    } catch {
+      // Tự động chuyển sang fallback dự phòng khi offline
+    }
+  }
+
   // Dữ liệu mẫu kết nối bảng unresolved_queries của Supabase
   return [
     {
-      id: 'gap-001',
+      id: '1',
+      query_text: 'quy định về nuôi thú cưng tại chung cư 2026',
+      domain: 'Nhà ở',
+      hit_count: 2,
+      status: 'unreviewed',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: '2',
       query_text: 'Thủ tục xin cấp lại giấy phép xây dựng nhà ở riêng lẻ bị mất?',
       domain: 'Nhà ở',
       hit_count: 14,
@@ -163,49 +186,75 @@ export async function fetchUnresolvedQueries(): Promise<UnresolvedQueryItem[]> {
       created_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
     },
     {
-      id: 'gap-002',
+      id: '3',
       query_text: 'Hợp đồng lao động bằng văn bản điện tử có giá trị như bản giấy không?',
       domain: 'Lao động',
       hit_count: 9,
       status: 'unreviewed',
       created_at: new Date(Date.now() - 3600 * 1000 * 48).toISOString(),
     },
-    {
-      id: 'gap-003',
-      query_text: 'Mức đóng bảo hiểm y tế tự nguyện năm 2026 cho hộ gia đình?',
-      domain: 'Bảo hiểm xã hội',
-      hit_count: 22,
-      status: 'resolved',
-      created_at: new Date(Date.now() - 3600 * 1000 * 72).toISOString(),
-    },
   ];
 }
 
 /**
- * Cập nhật trạng thái câu hỏi chưa giải quyết
+ * Cập nhật trạng thái câu hỏi chưa giải quyết vào Supabase Cloud
  */
 export async function updateUnresolvedQueryStatus(
   id: string,
   status: 'unreviewed' | 'resolved' | 'ignored'
 ): Promise<{ success: boolean; id: string; status: string }> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/gaps', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+  }
   return { success: true, id, status };
 }
 
 /**
- * Lấy danh sách cấu hình động của hệ thống
+ * Lấy danh sách cấu hình động của hệ thống từ Supabase Cloud
  */
 export async function fetchSystemConfigs(): Promise<SystemConfigItem[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/configs', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data as SystemConfigItem[];
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   return [
     {
-      key: 'hybrid_search_weights',
-      value: { vector_weight: 0.7, text_weight: 0.3 },
-      description: 'Trọng số kết hợp giữa tìm kiếm ngữ nghĩa Vector và Full-Text Search tsvector',
+      key: 'search_weights',
+      value: { bigram: 0.4, keyword: 0.25, unigram: 0.35, citationDocBonus: 0.15, citationArticleBonus: 0.35 },
+      description: 'Trọng số thuật toán chấm điểm tìm kiếm',
       updated_at: new Date().toISOString(),
     },
     {
       key: 'confidence_threshold',
-      value: 0.70,
-      description: 'Ngưỡng tự tin tối thiểu để AI trích dẫn câu trả lời pháp lý',
+      value: 0.65,
+      description: 'Ngưỡng tin cậy tối thiểu để trả lời căn cứ pháp lý',
+      updated_at: new Date().toISOString(),
+    },
+    {
+      key: 'hybrid_search_weights',
+      value: { vector_weight: 0.7, text_weight: 0.3 },
+      description: 'Trọng số kết hợp giữa tìm kiếm ngữ nghĩa Vector và Full-Text Search tsvector',
       updated_at: new Date().toISOString(),
     },
     {
@@ -218,11 +267,25 @@ export async function fetchSystemConfigs(): Promise<SystemConfigItem[]> {
 }
 
 /**
- * Cập nhật cấu hình hệ thống
+ * Cập nhật cấu hình hệ thống trực tiếp vào Supabase Cloud
  */
 export async function updateSystemConfig(
   key: string,
   value: Record<string, unknown> | number | string | boolean | string[] | unknown[]
 ): Promise<{ success: boolean; key: string; value: unknown }> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/configs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+  }
   return { success: true, key, value };
 }

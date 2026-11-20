@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   VStack,
   HStack,
@@ -14,14 +14,31 @@ import {
   Banner,
   StackItem,
 } from '@astryxdesign/core';
-import { updateSystemConfig } from '@/lib/api-client';
+import { fetchSystemConfigs, updateSystemConfig } from '@/lib/api-client';
 
 export default function SystemConfigsPage() {
   const [vectorWeight, setVectorWeight] = useState('0.70');
   const [textWeight, setTextWeight] = useState('0.30');
-  const [confidenceThreshold, setConfidenceThreshold] = useState('0.70');
+  const [confidenceThreshold, setConfidenceThreshold] = useState('0.65');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadConfigs() {
+      const configs = await fetchSystemConfigs();
+      const hybrid = configs.find((c) => c.key === 'hybrid_search_weights');
+      if (hybrid && typeof hybrid.value === 'object' && hybrid.value !== null) {
+        const val = hybrid.value as Record<string, number>;
+        if (val.vector_weight !== undefined) setVectorWeight(String(val.vector_weight));
+        if (val.text_weight !== undefined) setTextWeight(String(val.text_weight));
+      }
+      const confThresh = configs.find((c) => c.key === 'confidence_threshold');
+      if (confThresh && typeof confThresh.value === 'number') {
+        setConfidenceThreshold(String(confThresh.value));
+      }
+    }
+    loadConfigs();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
