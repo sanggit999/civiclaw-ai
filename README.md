@@ -23,7 +23,7 @@ Dự án được phân kỳ rạch ròi theo 2 giai đoạn phát triển:
 | Giai đoạn | Mục tiêu & Bản chất | Các Module SDD tương ứng | Trạng thái |
 | :--- | :--- | :--- | :---: |
 | **Giai đoạn 1: Core Foundation**<br>*(Grounded Legal Assistant)* | Xây dựng kho dữ liệu 5 bộ luật chính thống, tìm kiếm kết hợp Hybrid (`pgvector` + `tsvector`), luồng hỏi đáp trích dẫn nguồn 100% không ảo giác, và bộ nhớ phiên hội thoại đa lượt trên Supabase Cloud. | • `specs/001-legal-data-ingestion/`<br>• `specs/002-hybrid-search-fallback/`<br>• `specs/003-supabase-storage/`<br>• `specs/004-grounded-rag-citation/`<br>• `specs/005-chat-session-memory/` | ✅ **Hoàn thành 100%**<br>*(72/72 tests pass)* |
-| **Giai đoạn 2: Agentic Evolution**<br>*(Autonomous AI Agent & Contract Auditor)* | Nâng cấp thành AI Agent tự chủ với hộp công cụ (Tool Calling / Function Calling), vòng lặp suy luận ReAct và hệ thống rà soát rủi ro hợp đồng cá nhân PDF/DOCX (3 mức cảnh báo). | • `specs/006-contract-auditor/`<br>• Agent Tool Calling & ReAct Loop<br>• Tự động đặt câu hỏi làm rõ (Clarification) | 🎯 **Sẵn sàng triển khai** |
+| **Giai đoạn 2: Agentic Evolution**<br>*(Autonomous AI Agent & Contract Auditor)* | Nâng cấp thành AI Agent tự chủ với hộp công cụ (Tool Calling / Function Calling), hệ thống rà soát rủi ro hợp đồng cá nhân (3 mức: Đỏ, Vàng, Xanh), kiểm tra ngưỡng luật định và phát hiện điều khoản bị bỏ sót. | • `specs/006-contract-auditor-agent/`<br>• Agentic Tool Calling & ReAct Loop<br>• Tự động đặt câu hỏi làm rõ (Clarification) | 🚀 **Đang triển khai**<br>*(Đã xong Spec 006, 101/101 tests pass)* |
 
 ---
 
