@@ -2,14 +2,14 @@
 -- CIVICLAW AI - SPEC 007: MIGRATION CƠ SỞ DỮ LIỆU
 -- QUẢN LÝ HỒ SƠ & PHIÊN BẢN HỢP ĐỒNG (CONTRACT DOCUMENTS & VERSIONS)
 -- =============================================================================
--- Tuân thủ triệt để supabase-postgres-best-practices:
+-- Tuân thủ triệt để supabase-postgres-best-practices & SDD Domain Invariants:
 -- 1. Định danh chuẩn: lowercase, snake_case, UUID v4 (gen_random_uuid())
 -- 2. Chuẩn hóa thời gian: TIMESTAMPTZ mặc định timezone('utc', now())
--- 3. Toàn vẹn dữ liệu: CHECK constraints kiểm soát category, file_type, version >= 1
+-- 3. Toàn vẹn dữ liệu: CHECK constraints kiểm soát category, file_type, version >= 1, jsonb object
 -- 4. Chống trùng lặp & bảo toàn lịch sử: UNIQUE (document_id, version_number) & UNIQUE (document_id, content_hash)
 -- 5. Append-Only Invariant: Bảng contract_versions chỉ INSERT & SELECT (cấm UPDATE)
 -- 6. Tối ưu truy vấn: B-Tree Indexes trên Foreign Keys (document_id, user_id) và created_at
--- 7. Idempotency: Hỗ trợ chạy lại an toàn nhiều lần không bao giờ báo lỗi
+-- 7. Idempotency: Hỗ trợ chạy lại an toàn nhiều lần không bao giờ báo lỗi (DO blocks + DROP POLICY)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ ALTER TABLE public.contract_documents
 -- Ràng buộc kiểm tra (CHECK constraints) cho contract_documents (Idempotent DO blocks)
 DO $$
 BEGIN
-    -- Kiểm tra category hợp lệ
+    -- Kiểm tra category hợp lệ theo danh mục nghiệp vụ
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint 
         WHERE conname = 'chk_contract_category' AND conrelid = 'public.contract_documents'::regclass
@@ -107,6 +107,16 @@ BEGIN
             CHECK (file_type IN ('docx', 'pdf', 'txt', 'md', 'doc'));
     END IF;
 
+    -- Tên file không được để trống
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'chk_file_name_not_empty' AND conrelid = 'public.contract_versions'::regclass
+    ) THEN
+        ALTER TABLE public.contract_versions 
+            ADD CONSTRAINT chk_file_name_not_empty 
+            CHECK (length(trim(file_name)) > 0);
+    END IF;
+
     -- Mã băm nội dung không được để trống
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint 
@@ -125,6 +135,16 @@ BEGIN
         ALTER TABLE public.contract_versions 
             ADD CONSTRAINT chk_cleaned_text_not_empty 
             CHECK (length(trim(cleaned_text)) > 0);
+    END IF;
+
+    -- Báo cáo audit phải là cấu trúc JSONB Object hợp lệ
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'chk_audit_report_is_object' AND conrelid = 'public.contract_versions'::regclass
+    ) THEN
+        ALTER TABLE public.contract_versions 
+            ADD CONSTRAINT chk_audit_report_is_object 
+            CHECK (jsonb_typeof(audit_report) = 'object');
     END IF;
 END $$;
 
