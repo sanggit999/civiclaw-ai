@@ -201,9 +201,9 @@ export class LegalSearchEngine {
 
     const queryBigrams = extractBigrams(meaningfulWords);
 
-    // Lọc theo domain nếu có yêu cầu
+    // Lọc theo domain nếu có yêu cầu (So sánh không phân biệt hoa thường)
     const candidateChunks = query.domain
-      ? this.chunks.filter((c) => c.domain === query.domain)
+      ? this.chunks.filter((c) => c.domain.toLowerCase() === query.domain!.toLowerCase())
       : this.chunks;
 
     // Chấm điểm từng chunk

@@ -1,0 +1,112 @@
+import { LegalChunk } from '../ingestion/types.js';
+import { RagPipelineConfig } from './types.js';
+
+/**
+ * Cấu hình mặc định cho luồng RAG pháp lý (Anti-Hardcode)
+ */
+export const DEFAULT_RAG_CONFIG: RagPipelineConfig = {
+  defaultTopK: 5,
+  defaultConfidenceThreshold: 0.65,
+  maxContextLengthChars: 8000,
+  systemPrompt: `Bạn là CivicLaw AI - Trợ lý pháp lý thông minh, minh bạch và chính xác của Việt Nam.
+Nhiệm vụ của Bạn là giải đáp thắc mắc pháp luật cho công dân dựa trên các văn bản quy phạm pháp luật được cung cấp.
+
+QUY TẮC BẮT BUỘC (NON-NEGOTIABLE RULES):
+1. 100% CĂN CỨ VÀ TRÍCH DẪN: Mọi nhận định, mức phạt, hay nghĩa vụ pháp lý phải được trích dẫn đích danh [Điểm... Khoản... Điều... Số hiệu văn bản quy phạm pháp luật...].
+2. TUYỆT ĐỐI KHÔNG ẢO GIÁC: Chỉ sử dụng các thông tin và điều luật có trong phần "NGỮ CẢNH PHÁP LUẬT" bên dưới. Tuyệt đối không tự suy đoán, bịa đặt số tiền phạt hoặc trích dẫn văn bản không có trong ngữ cảnh.
+3. CẤU TRÚC PHẢN HỒI BẮT BUỘC GỒM 3 PHẦN:
+   - 📌 KẾT LUẬN NHANH: Trả lời ngắn gọn, trực diện vào vấn đề (có vi phạm không, mức phạt chính bao nhiêu, có bị trừ điểm GPLX hay không).
+   - ⚖️ PHÂN TÍCH CHI TIẾT: Diễn giải rõ ràng hành vi, chủ thể, điều kiện áp dụng và hình thức phạt bổ sung.
+   - 📚 CĂN CỨ PHÁP LÝ: Liệt kê rõ ràng danh mục các trích dẫn pháp lý chính thức tương ứng.`,
+  fallbackMessage: `⚠️ THÔNG BÁO VỀ CĂN CỨ PHÁP LÝ:
+Hiện tại CivicLaw AI chưa có dữ liệu chính thức về vấn đề Bạn hỏi trong các bộ luật cốt lõi hiện có.
+Để bảo đảm tính chính xác tuyệt đối và tránh cung cấp thông tin sai lệch, hệ thống đã ghi nhận câu hỏi của Bạn vào Hàng đợi tri thức để Quản trị viên cập nhật văn bản quy phạm pháp luật tương ứng.`,
+  extractiveFallbackNotice: `⚠️ THÔNG BÁO TỰ ĐỘNG:
+Hệ thống xử lý ngôn ngữ tự nhiên đang tạm thời gián đoạn (quá tải hạn mức hoặc bảo trì kết nối AI).
+Để không làm gián đoạn việc tra cứu, CivicLaw AI đã tự động chuyển sang chế độ TRÍCH XUẤT NGUYÊN VĂN TỪ CƠ SỞ DỮ LIỆU PHÁP LUẬT CHÍNH THỨC:`,
+};
+
+/**
+ * Định dạng danh sách chunks thành văn bản ngữ cảnh rõ ràng kèm trích dẫn
+ */
+export function formatContextChunks(
+  chunks: LegalChunk[],
+  maxLength: number = DEFAULT_RAG_CONFIG.maxContextLengthChars
+): string {
+  if (!chunks || chunks.length === 0) return '';
+
+  const formattedBlocks: string[] = [];
+  let currentLength = 0;
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const block = `[NGUỒN THAM KHẢO ${i + 1}]: ${chunk.fullReference}\n${chunk.content}\n`;
+
+    if (currentLength + block.length > maxLength) {
+      // Nếu là khối đầu tiên mà đã vượt quá maxLength, cắt ngắn nội dung để bảo đảm vẫn có ngữ cảnh
+      if (formattedBlocks.length === 0) {
+        const maxContentLen = Math.max(50, maxLength - chunk.fullReference.length - 60);
+        const truncated = chunk.content.substring(0, maxContentLen);
+        formattedBlocks.push(`[NGUỒN THAM KHẢO 1]: ${chunk.fullReference}\n${truncated}...\n`);
+      }
+      break;
+    }
+
+    formattedBlocks.push(block);
+    currentLength += block.length;
+  }
+
+  return formattedBlocks.join('\n---\n');
+}
+
+/**
+ * Xây dựng prompt hoàn chỉnh gửi tới LLM Provider
+ */
+export function buildGroundedPrompt(
+  query: string,
+  chunks: LegalChunk[],
+  config?: Partial<RagPipelineConfig>
+): { prompt: string; systemInstruction: string } {
+  const mergedConfig = { ...DEFAULT_RAG_CONFIG, ...config };
+  const contextText = formatContextChunks(chunks, mergedConfig.maxContextLengthChars);
+
+  const prompt = `--- BẮT ĐẦU NGỮ CẢNH PHÁP LUẬT ---
+${contextText}
+--- KẾT THÚC NGỮ CẢNH PHÁP LUẬT ---
+
+CÂU HỎI CỦA CÔNG DÂN:
+${query}
+
+Hãy trả lời câu hỏi trên theo đúng các quy tắc bắt buộc và cấu trúc 3 phần đã được hướng dẫn.`;
+
+  return {
+    prompt,
+    systemInstruction: mergedConfig.systemPrompt,
+  };
+}
+
+/**
+ * Tạo câu trả lời trích xuất trực tiếp từ Context Chunks trong Database khi LLM gặp sự cố
+ * Bảo đảm 100% căn cứ thực tế, 0% ảo giác, không phụ thuộc LLM bên thứ 3
+ */
+export function buildExtractiveFallbackAnswer(
+  chunks: LegalChunk[],
+  notice: string = DEFAULT_RAG_CONFIG.extractiveFallbackNotice
+): string {
+  if (!chunks || chunks.length === 0) {
+    return DEFAULT_RAG_CONFIG.fallbackMessage;
+  }
+
+  const sections: string[] = [notice, '\n📚 CĂN CỨ PHÁP LÝ TÌM THẤY TRONG HỆ THỐNG:\n'];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    sections.push(`${i + 1}. [${chunk.fullReference}]\nNội dung: "${chunk.content.trim()}"\n`);
+  }
+
+  sections.push(
+    '💡 Bạn có thể đối chiếu trực tiếp các điều khoản nguyên văn ở trên để áp dụng vào trường hợp của mình một cách hoàn toàn chính xác.'
+  );
+
+  return sections.join('\n');
+}
