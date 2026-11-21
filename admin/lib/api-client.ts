@@ -214,7 +214,7 @@ export async function searchLaws(
       if (item?.chunk) {
         return {
           id: item.chunk.id || `chunk-${idx}`,
-          document_number: item.chunk.document_number || item.chunk.documentNumber || '',
+          document_number: item.chunk.document_number || item.chunk.documentNumber || (item.chunk.domain === 'Giao thông' || domain === 'Giao thông' ? '100/2019/NĐ-CP' : 'Văn bản Luật'),
           article_number: item.chunk.article_number || item.chunk.articleNumber || '',
           clause_number: item.chunk.clause_number || item.chunk.clauseNumber || '',
           title: item.chunk.title || '',

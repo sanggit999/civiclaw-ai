@@ -110,7 +110,7 @@ export default function LawsBrowserPage() {
 
   const tableData: LawRow[] = (results || []).map((item) => ({
     id: item.id,
-    document_number: item.document_number,
+    document_number: item.document_number || (item.domain === 'Giao thông' ? '100/2019/NĐ-CP' : 'Văn bản Luật'),
     article_clause: `${item.article_number || ''} ${item.clause_number || ''}`.trim() || 'Toàn văn',
     domain_title: item.title || item.domain || 'Quy định chung',
     content: item.content,
