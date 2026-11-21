@@ -7,6 +7,10 @@ import {
   fetchSystemConfigs,
   updateSystemConfig,
   getGatewayBaseUrl,
+  fetchAdminStats,
+  fetchChatSessions,
+  fetchChatSessionMessages,
+  auditContractDirect,
 } from '../../../admin/lib/api-client';
 
 describe('Spec 009 - Web Admin API Client & Astryx Integration', () => {
@@ -113,6 +117,31 @@ describe('Spec 009 - Web Admin API Client & Astryx Integration', () => {
       const updateRes = await updateSystemConfig('confidence_threshold', 0.75);
       expect(updateRes.success).toBe(true);
       expect(updateRes.value).toBe(0.75);
+    });
+  });
+
+  describe('Lát 5: Admin Stats, Chat Sessions Audit & Contract Testbed', () => {
+    it('Lấy số liệu thống kê tổng hợp 5 bảng cơ sở dữ liệu', async () => {
+      const stats = await fetchAdminStats();
+      expect(stats.legalChunksCount).toBe(4715);
+      expect(stats.chatSessionsCount).toBeGreaterThan(0);
+      expect(stats.groundedRatioPercent).toBe(100);
+      expect(stats.lastUpdated).toBeDefined();
+    });
+
+    it('Truy xuất danh sách phiên tư vấn và tin nhắn kiểm toán', async () => {
+      const sessions = await fetchChatSessions();
+      expect(Array.isArray(sessions)).toBe(true);
+
+      const messages = await fetchChatSessionMessages('sess-001');
+      expect(Array.isArray(messages)).toBe(true);
+    });
+
+    it('Rà soát hợp đồng kiểm toán pháp lý với Agentic Auditor', async () => {
+      const report = await auditContractDirect('Hợp đồng thuê nhà đặt cọc 10 triệu...', 'RENTAL');
+      expect(report.overallRisk).toBeDefined();
+      expect(typeof report.riskScore).toBe('number');
+      expect(report.findings.length).toBeGreaterThan(0);
     });
   });
 

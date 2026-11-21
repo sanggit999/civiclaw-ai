@@ -37,6 +37,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <TopNavItem label="Tổng quan" href="/" isSelected={pathname === '/'} />
           <TopNavItem label="Kho Luật (4.715 Chunks)" href="/laws" isSelected={pathname === '/laws'} />
           <TopNavItem label="Khoảng trống Tri thức" href="/gaps" isSelected={pathname === '/gaps'} />
+          <TopNavItem label="Phiên & Audit" href="/sessions" isSelected={pathname === '/sessions'} />
+          <TopNavItem label="Kiểm Toán Hợp Đồng" href="/contracts" isSelected={pathname === '/contracts'} />
           <TopNavItem label="Cấu hình Động" href="/configs" isSelected={pathname === '/configs'} />
         </HStack>
       }
@@ -65,6 +67,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         label="Khoảng trống Tri thức"
         href="/gaps"
         isSelected={pathname === '/gaps'}
+      />
+      <SideNavItem
+        label="Kiểm toán Phiên & Căn cứ Luật"
+        href="/sessions"
+        isSelected={pathname === '/sessions'}
+      />
+      <SideNavItem
+        label="Sân thử nghiệm Hợp đồng"
+        href="/contracts"
+        isSelected={pathname === '/contracts'}
       />
       <SideNavItem
         label="Cấu hình Động Hệ thống"
