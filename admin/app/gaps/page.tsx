@@ -15,6 +15,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
+import { PageContainer } from '@/components/PageContainer';
 import {
   fetchUnresolvedQueries,
   updateUnresolvedQueryStatus,
@@ -184,25 +185,17 @@ export default function KnowledgeGapsPage() {
   ];
 
   return (
-    <VStack gap={6}>
-      <HStack gap={4} vAlign="center">
-        <StackItem size="fill">
-          <VStack gap={1}>
-            <Heading level={1}>Quản Trị Khoảng Trống Tri Thức (Knowledge Gaps)</Heading>
-            <Text type="supporting">
-              Theo dõi các câu hỏi công dân tìm kiếm có điểm tin cậy dưới ngưỡng quy định để lập kế hoạch bổ sung dữ liệu luật.
-            </Text>
-          </VStack>
-        </StackItem>
+    <PageContainer
+      title="Quản Trị Khoảng Trống Tri Thức (Knowledge Gaps)"
+      description="Theo dõi các câu hỏi công dân tìm kiếm có điểm tin cậy dưới ngưỡng quy định để lập kế hoạch bổ sung dữ liệu luật."
+      headerEndContent={
         <Button
           label={loading ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}
           variant="secondary"
           onClick={loadData}
         />
-      </HStack>
-
-      <Divider />
-
+      }
+    >
       {/* Hàng thẻ thống kê chỉ số Gaps */}
       <HStack gap={4} wrap="wrap">
         <StackItem size="fill">
@@ -326,6 +319,6 @@ export default function KnowledgeGapsPage() {
           </VStack>
         )}
       </dialog>
-    </VStack>
+    </PageContainer>
   );
 }

@@ -16,6 +16,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { searchLaws, LegalSearchResultItem } from '@/lib/api-client';
+import { PageContainer } from '@/components/PageContainer';
 
 interface LawRow extends Record<string, unknown> {
   id: string;
@@ -174,16 +175,10 @@ export default function LawsBrowserPage() {
   ];
 
   return (
-    <VStack gap={6}>
-      <VStack gap={1}>
-        <Heading level={1}>Trình Duyệt & Tra Cứu Kho Luật (4.715 Chunks)</Heading>
-        <Text type="supporting">
-          Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector.
-        </Text>
-      </VStack>
-
-      <Divider />
-
+    <PageContainer
+      title="Trình Duyệt & Tra Cứu Kho Luật (4.715 Chunks)"
+      description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector."
+    >
       {/* Tabs lọc nhanh 5 bộ luật theo tiêu chuẩn Modern Web Accessibility */}
       <HStack gap={2} wrap="wrap" role="tablist" aria-label="Bộ lọc lĩnh vực pháp luật">
         {domainTabs.map((tab) => {
@@ -333,6 +328,6 @@ export default function LawsBrowserPage() {
           </VStack>
         )}
       </dialog>
-    </VStack>
+    </PageContainer>
   );
 }

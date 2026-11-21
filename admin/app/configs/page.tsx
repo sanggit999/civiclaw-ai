@@ -15,6 +15,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { fetchSystemConfigs, updateSystemConfig } from '@/lib/api-client';
+import { PageContainer } from '@/components/PageContainer';
 
 export default function SystemConfigsPage() {
   const [vectorWeight, setVectorWeight] = useState('0.70');
@@ -59,16 +60,10 @@ export default function SystemConfigsPage() {
   };
 
   return (
-    <VStack gap={6}>
-      <VStack gap={1}>
-        <Heading level={1}>Cấu Hình Động Hệ Thống (System Configs)</Heading>
-        <Text type="supporting">
-          Quản trị các tham số tính toán của thuật toán Hybrid Search, ngưỡng lọc trích dẫn và bộ từ dừng tiếng Việt.
-        </Text>
-      </VStack>
-
-      <Divider />
-
+    <PageContainer
+      title="Cấu Hình Động Hệ Thống (System Configs)"
+      description="Quản trị các tham số tính toán của thuật toán Hybrid Search, ngưỡng lọc trích dẫn và bộ từ dừng tiếng Việt."
+    >
       {savedMessage && (
         <Banner
           status="success"
@@ -168,6 +163,6 @@ export default function SystemConfigsPage() {
           onClick={handleSave}
         />
       </HStack>
-    </VStack>
+    </PageContainer>
   );
 }

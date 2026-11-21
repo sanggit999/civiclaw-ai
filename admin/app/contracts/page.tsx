@@ -13,6 +13,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
+import { PageContainer } from '@/components/PageContainer';
 import {
   auditContractDirect,
   ContractAuditReport,
@@ -97,16 +98,10 @@ export default function ContractPlaygroundPage() {
   };
 
   return (
-    <VStack gap={6}>
-      <VStack gap={1}>
-        <Heading level={1}>Sân Thử Nghiệm Kiểm Toán Hợp Đồng (Contract Auditor Testbed)</Heading>
-        <Text type="supporting">
-          Thử nghiệm trực tiếp Agentic Contract Auditor đối soát các điều khoản hợp đồng cá nhân với 5 Bộ luật chính thống và phát hiện bẫy pháp lý.
-        </Text>
-      </VStack>
-
-      <Divider />
-
+    <PageContainer
+      title="Sân Thử Nghiệm Kiểm Toán Hợp Đồng (Contract Auditor Testbed)"
+      description="Thử nghiệm trực tiếp Agentic Contract Auditor đối soát các điều khoản hợp đồng cá nhân với 5 Bộ luật chính thống và phát hiện bẫy pháp lý."
+    >
       {/* Các mẫu hợp đồng thử nghiệm nhanh */}
       <Card padding={4}>
         <VStack gap={3}>
@@ -269,6 +264,6 @@ export default function ContractPlaygroundPage() {
           </Card>
         </VStack>
       )}
-    </VStack>
+    </PageContainer>
   );
 }

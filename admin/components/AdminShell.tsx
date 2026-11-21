@@ -91,11 +91,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <AppShell
         height="fill"
         variant="elevated"
-        contentPadding={4}
+        contentPadding={0}
         topNav={topNav}
         sideNav={sideNav}
       >
-        <Section padding={0}>
+        <Section padding={0} style={{ scrollbarGutter: 'stable', minHeight: '100%' }}>
           {children}
         </Section>
       </AppShell>

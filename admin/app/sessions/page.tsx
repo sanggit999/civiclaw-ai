@@ -14,6 +14,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
+import { PageContainer } from '@/components/PageContainer';
 import {
   fetchChatSessions,
   fetchChatSessionMessages,
@@ -127,25 +128,17 @@ export default function SessionsAuditPage() {
   ];
 
   return (
-    <VStack gap={6}>
-      <HStack gap={4} vAlign="center">
-        <StackItem size="fill">
-          <VStack gap={1}>
-            <Heading level={1}>Kiểm Toán Hội Thoại & Trích Dẫn Pháp Lý (Grounded Audit)</Heading>
-            <Text type="supporting">
-              Giám sát các phiên tư vấn của công dân, kiểm toán độ tin cậy trích dẫn 100% nguồn luật chính thống và ngăn ngừa ảo giác AI.
-            </Text>
-          </VStack>
-        </StackItem>
+    <PageContainer
+      title="Kiểm Toán Hội Thoại & Trích Dẫn Pháp Lý (Grounded Audit)"
+      description="Giám sát các phiên tư vấn của công dân, kiểm toán độ tin cậy trích dẫn 100% nguồn luật chính thống và ngăn ngừa ảo giác AI."
+      headerEndContent={
         <Button
           label={loadingSessions ? 'Đang cập nhật...' : 'Làm mới phiên'}
           variant="secondary"
           onClick={loadSessions}
         />
-      </HStack>
-
-      <Divider />
-
+      }
+    >
       {/* Thẻ thống kê chỉ số kiểm toán */}
       <HStack gap={4} wrap="wrap">
         <StackItem size="fill">
@@ -277,6 +270,6 @@ export default function SessionsAuditPage() {
           </Card>
         </StackItem>
       </HStack>
-    </VStack>
+    </PageContainer>
   );
 }

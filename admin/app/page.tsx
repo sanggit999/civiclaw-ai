@@ -14,6 +14,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
+import { PageContainer } from '@/components/PageContainer';
 import {
   fetchGatewayHealth,
   fetchAdminStats,
@@ -138,65 +139,57 @@ export default function DashboardPage() {
     },
   ];
 
-  return (
-    <VStack gap={6}>
-      {/* Tiêu đề & Bảng điều khiển Auto-Refresh */}
-      <HStack gap={4} vAlign="center" wrap="wrap">
-        <StackItem size="fill">
-          <VStack gap={1}>
-            <Heading level={1}>Tổng Quan Cổng Quản Trị CivicLaw AI</Heading>
-            <Text type="supporting">
-              Giám sát Central API Gateway, kiểm soát kho dữ liệu 4.715 chunks và cấu hình động hệ thống.
-            </Text>
-          </VStack>
-        </StackItem>
-
-        <HStack gap={3} vAlign="center">
-          {/* Live Indicator theo chỉ dẫn modern web */}
-          <HStack gap={2} vAlign="center">
-            <Badge
-              label={refreshIntervalSec > 0 ? '● Real-time Live' : '○ Tạm dừng'}
-              variant={refreshIntervalSec > 0 ? 'success' : 'neutral'}
-            />
-            {lastRefreshedAt && (
-              <Text type="supporting">
-                Cập nhật: {lastRefreshedAt}
-              </Text>
-            )}
-          </HStack>
-
-          {/* Chọn chu kỳ làm mới */}
-          <HStack gap={1} vAlign="center">
-            <Button
-              label="15s"
-              variant={refreshIntervalSec === 15 ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setRefreshIntervalSec(15)}
-            />
-            <Button
-              label="30s"
-              variant={refreshIntervalSec === 30 ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setRefreshIntervalSec(30)}
-            />
-            <Button
-              label="Tắt"
-              variant={refreshIntervalSec === 0 ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setRefreshIntervalSec(0)}
-            />
-          </HStack>
-
-          <Button
-            label={loading ? 'Đang cập nhật...' : 'Làm mới ngay'}
-            variant="secondary"
-            onClick={loadData}
-          />
-        </HStack>
+  const headerActions = (
+    <HStack gap={3} vAlign="center">
+      {/* Live Indicator theo chỉ dẫn modern web */}
+      <HStack gap={2} vAlign="center">
+        <Badge
+          label={refreshIntervalSec > 0 ? '● Real-time Live' : '○ Tạm dừng'}
+          variant={refreshIntervalSec > 0 ? 'success' : 'neutral'}
+        />
+        {lastRefreshedAt && (
+          <Text type="supporting">
+            Cập nhật: {lastRefreshedAt}
+          </Text>
+        )}
       </HStack>
 
-      <Divider />
+      {/* Chọn chu kỳ làm mới */}
+      <HStack gap={1} vAlign="center">
+        <Button
+          label="15s"
+          variant={refreshIntervalSec === 15 ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => setRefreshIntervalSec(15)}
+        />
+        <Button
+          label="30s"
+          variant={refreshIntervalSec === 30 ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => setRefreshIntervalSec(30)}
+        />
+        <Button
+          label="Tắt"
+          variant={refreshIntervalSec === 0 ? 'primary' : 'ghost'}
+          size="sm"
+          onClick={() => setRefreshIntervalSec(0)}
+        />
+      </HStack>
 
+      <Button
+        label={loading ? 'Đang cập nhật...' : 'Làm mới ngay'}
+        variant="secondary"
+        onClick={loadData}
+      />
+    </HStack>
+  );
+
+  return (
+    <PageContainer
+      title="Tổng Quan Cổng Quản Trị CivicLaw AI"
+      description="Giám sát Central API Gateway, kiểm soát kho dữ liệu 4.715 chunks và cấu hình động hệ thống."
+      headerEndContent={headerActions}
+    >
       {/* Hàng 1: Thống kê hạ tầng cốt lõi */}
       <HStack gap={4} wrap="wrap">
         <StackItem size="fill">
@@ -303,6 +296,6 @@ export default function DashboardPage() {
           <Table data={endpointData} columns={columns} />
         </VStack>
       </Card>
-    </VStack>
+    </PageContainer>
   );
 }
