@@ -151,7 +151,7 @@ describe('Spec 009 - Web Admin API Client & Astryx Integration', () => {
       delete process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
       const defaultUrl = getGatewayBaseUrl();
-      expect(defaultUrl).toBe('http://localhost:3000');
+      expect(defaultUrl).toBe('http://localhost:3001');
 
       process.env.NEXT_PUBLIC_API_GATEWAY_URL = 'http://api.civiclaw.vn:8080';
       const customUrl = getGatewayBaseUrl();

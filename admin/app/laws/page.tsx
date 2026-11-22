@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   VStack,
   HStack,
@@ -34,16 +35,21 @@ interface LawRow extends Record<string, unknown> {
   raw: LegalSearchResultItem;
 }
 
-export default function LawsBrowserPage() {
-  const [query, setQuery] = useState('nồng độ cồn');
-  const [domain, setDomain] = useState('');
+function LawsBrowserContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qParam = searchParams.get('q');
+  const domainParam = searchParams.get('domain');
+
+  const [query, setQuery] = useState(qParam ?? 'nồng độ cồn');
+  const [domain, setDomain] = useState(domainParam ?? '');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<LegalSearchResultItem[]>([]);
   const [total, setTotal] = useState(0);
   const [selectedLaw, setSelectedLaw] = useState<LegalSearchResultItem | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const performSearch = async (searchQuery: string, searchDomain: string) => {
+  const performSearch = useCallback(async (searchQuery: string, searchDomain: string) => {
     setLoading(true);
     try {
       const data = await searchLaws(searchQuery, searchDomain || undefined, 20);
@@ -55,19 +61,33 @@ export default function LawsBrowserPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    performSearch('nồng độ cồn', '');
   }, []);
 
+  // Đồng bộ và tự động tìm kiếm khi URL thay đổi (hỗ trợ tìm kiếm từ Header Omni-Search hoặc bookmark)
+  useEffect(() => {
+    const currentQ = qParam ?? 'nồng độ cồn';
+    const currentDomain = domainParam ?? '';
+    setQuery(currentQ);
+    setDomain(currentDomain);
+    performSearch(currentQ, currentDomain);
+  }, [qParam, domainParam, performSearch]);
+
   const handleSearch = () => {
-    performSearch(query, domain);
+    const trimmed = query.trim();
+    performSearch(trimmed, domain);
+    const params = new URLSearchParams();
+    if (trimmed) params.set('q', trimmed);
+    if (domain) params.set('domain', domain);
+    router.replace(`/laws?${params.toString()}`);
   };
 
   const handleSelectTab = (selectedDomain: string) => {
     setDomain(selectedDomain);
     performSearch(query, selectedDomain);
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('q', query.trim());
+    if (selectedDomain) params.set('domain', selectedDomain);
+    router.replace(`/laws?${params.toString()}`);
   };
 
   const openDetailDrawer = (law: LegalSearchResultItem) => {
@@ -197,42 +217,52 @@ export default function LawsBrowserPage() {
 
       {/* Thanh tìm kiếm toàn diện (Omni-search Bar) */}
       <Card padding={4}>
-        <VStack gap={3}>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
-              <TextInput
-                label="Từ khóa tra cứu hoặc nội dung tranh chấp pháp lý"
-                value={query}
-                onChange={setQuery}
-                placeholder="Nhập từ khóa (ví dụ: nồng độ cồn, thử việc 90 ngày, bẫy cọc, rút bảo hiểm xã hội...)"
-              />
-            </StackItem>
-            <StackItem size="static">
-              <Selector
-                label="Lọc theo Lĩnh vực"
-                value={domain}
-                onChange={setDomain}
-                options={domainTabs}
-              />
-            </StackItem>
-            <StackItem>
-              <Button
-                label={loading ? 'Đang tìm kiếm...' : 'Tìm kiếm'}
-                variant="primary"
-                onClick={handleSearch}
-              />
-            </StackItem>
-          </HStack>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
+          }}
+          style={{ margin: 0, padding: 0 }}
+        >
+          <VStack gap={3}>
+            <HStack gap={3} vAlign="center" wrap="wrap">
+              <StackItem size="fill">
+                <TextInput
+                  label="Từ khóa tra cứu hoặc nội dung tranh chấp pháp lý"
+                  value={query}
+                  onChange={setQuery}
+                  onEnter={handleSearch}
+                  hasClear
+                  placeholder="Nhập từ khóa (ví dụ: nồng độ cồn, thử việc 90 ngày, bẫy cọc, rút bảo hiểm xã hội...)"
+                />
+              </StackItem>
+              <StackItem size="static">
+                <Selector
+                  label="Lọc theo Lĩnh vực"
+                  value={domain}
+                  onChange={handleSelectTab}
+                  options={domainTabs}
+                />
+              </StackItem>
+              <StackItem>
+                <Button
+                  label={loading ? 'Đang tìm kiếm...' : 'Tìm kiếm'}
+                  variant="primary"
+                  onClick={handleSearch}
+                />
+              </StackItem>
+            </HStack>
 
-          <HStack gap={2} vAlign="center">
-            <Text type="supporting" style={{ fontSize: '13px' }}>
-              {loading ? 'Đang truy vấn kho luật...' : `Tìm thấy ${total} điều khoản phù hợp`}
-            </Text>
-            {domain && (
-              <Badge label={`Lĩnh vực: ${domain}`} variant="blue" />
-            )}
-          </HStack>
-        </VStack>
+            <HStack gap={2} vAlign="center">
+              <Text type="supporting" style={{ fontSize: '13px' }}>
+                {loading ? 'Đang truy vấn kho luật...' : `Tìm thấy ${total} điều khoản phù hợp`}
+              </Text>
+              {domain && (
+                <Badge label={`Lĩnh vực: ${domain}`} variant="blue" />
+              )}
+            </HStack>
+          </VStack>
+        </form>
       </Card>
 
       {/* Bảng dữ liệu Grid mật độ cao */}
@@ -326,5 +356,22 @@ export default function LawsBrowserPage() {
         )}
       </Drawer>
     </PageContainer>
+  );
+}
+
+export default function LawsBrowserPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageContainer
+          title="Tra Cứu Kho Dữ Liệu Luật (4.715 Chunks)"
+          description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector với độ trễ thấp."
+        >
+          <Text type="supporting">Đang tải giao diện tra cứu pháp luật...</Text>
+        </PageContainer>
+      }
+    >
+      <LawsBrowserContent />
+    </Suspense>
   );
 }

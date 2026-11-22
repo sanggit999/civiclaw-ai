@@ -23,6 +23,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { themes, defaultThemeSlug } from '../astryx-themes';
+import { GlobalSearchInput } from './GlobalSearchInput';
 
 const ROUTE_CONFIG: Record<string, { group: string; name: string }> = {
   '/': { group: 'Vận Hành & Giám Sát', name: 'Tổng Quan Gateway' },
@@ -48,27 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <BreadcrumbItem isCurrent>{currentRoute.name}</BreadcrumbItem>
         </Breadcrumbs>
       }
-      centerContent={
-        <HStack
-          gap={2}
-          vAlign="center"
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '6px',
-            paddingInline: '14px',
-            paddingBlock: '5px',
-            cursor: 'pointer',
-            minWidth: '340px',
-          }}
-        >
-          <Text type="supporting" style={{ fontSize: '12px' }}>
-            🔍 Tìm kiếm điều luật, phiên hỏi đáp, hợp đồng...
-          </Text>
-          <StackItem size="fill" />
-          <Badge label="Ctrl + K" variant="neutral" />
-        </HStack>
-      }
+      centerContent={<GlobalSearchInput />}
       endContent={
         <HStack gap={3} vAlign="center">
           {/* Trạng thái Gateway trực tiếp - duy nhất một nơi trên thanh header */}
