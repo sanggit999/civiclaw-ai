@@ -23,7 +23,7 @@ Dự án được phân kỳ rạch ròi theo 2 giai đoạn phát triển:
 | Giai đoạn | Mục tiêu & Bản chất | Các Module SDD tương ứng | Trạng thái |
 | :--- | :--- | :--- | :---: |
 | **Giai đoạn 1: Core Foundation**<br>*(Grounded Legal Assistant)* | Xây dựng kho dữ liệu 5 bộ luật chính thống, tìm kiếm kết hợp Hybrid (`pgvector` + `tsvector`), luồng hỏi đáp trích dẫn nguồn 100% không ảo giác, và bộ nhớ phiên hội thoại đa lượt trên Supabase Cloud. | • `specs/001-legal-data-ingestion/`<br>• `specs/002-hybrid-search-fallback/`<br>• `specs/003-supabase-storage/`<br>• `specs/004-grounded-rag-citation/`<br>• `specs/005-chat-session-memory/` | ✅ **Hoàn thành 100%**<br>*(72/72 tests pass)* |
-| **Giai đoạn 2: Agentic Evolution**<br>*(Autonomous AI Agent & Contract Auditor)* | Nâng cấp thành AI Agent tự chủ với hộp công cụ (Tool Calling / Function Calling), hệ thống rà soát rủi ro hợp đồng cá nhân (3 mức: Đỏ, Vàng, Xanh), dynamic policy từ DB, bóc tách tài liệu làm sạch nhiễu, quản lý phiên bản hợp đồng ($v_1 \rightarrow v_2 \rightarrow v_3$), đối soát lịch sử thẩm định (Audit Diff Engine) và Cổng API Trung tâm Server-Sent Events (SSE) Streaming. | • `specs/006-contract-auditor-agent/`<br>• `specs/007-contract-parser-versioning/`<br>• `specs/008-central-api-gateway/`<br>• Real-time SSE Chat & Audit Streaming | 🚀 **Đang triển khai**<br>*(Đã xong Specs 006, 007 & 008, 139/139 tests pass)* |
+| **Giai đoạn 2: Agentic Evolution**<br>*(Autonomous AI Agent & Contract Auditor)* | Nâng cấp thành AI Agent tự chủ với hộp công cụ (Tool Calling / Function Calling), hệ thống rà soát rủi ro hợp đồng cá nhân (3 mức: Đỏ, Vàng, Xanh), dynamic policy từ DB, bóc tách tài liệu làm sạch nhiễu, quản lý phiên bản hợp đồng ($v_1 \rightarrow v_2 \rightarrow v_3$), đối soát lịch sử thẩm định (Audit Diff Engine), Cổng API Trung tâm Server-Sent Events (SSE) Streaming, Cổng Quản trị Web Admin (Astryx Design System) và Xác thực Bảo vệ Đường dẫn Quản trị viên (Next.js Middleware + Secure Cookies). | • `specs/006-contract-auditor-agent/`<br>• `specs/007-contract-parser-versioning/`<br>• `specs/008-central-api-gateway/`<br>• `specs/009-web-admin-astryx/`<br>• `specs/010-admin-authentication/` | 🚀 **Đang triển khai**<br>*(Đã xong Specs 006 - 010, 167/167 tests pass)* |
 
 ---
 
@@ -106,7 +106,7 @@ npm install
 ```
 
 ### 2. Kiểm thử toàn bộ hệ thống
-Chạy test suite tự động bằng Vitest (146 tests):
+Chạy test suite tự động bằng Vitest (167 tests):
 ```bash
 npm test
 # hoặc kiểm thử liên tục khi code:
