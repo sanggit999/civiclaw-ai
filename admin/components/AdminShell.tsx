@@ -8,9 +8,7 @@ import {
   AppShell,
   TopNav,
   SideNav,
-  SideNavSection,
   SideNavItem,
-  SideNavHeading,
   Breadcrumbs,
   BreadcrumbItem,
   Avatar,
@@ -33,13 +31,13 @@ interface CurrentUser {
   fullName: string;
 }
 
-const ROUTE_CONFIG: Record<string, { group: string; name: string }> = {
-  '/': { group: 'Vận Hành & Giám Sát', name: 'Tổng Quan Gateway' },
-  '/sessions': { group: 'Vận Hành & Giám Sát', name: 'Kiểm Toán Phiên AI' },
-  '/laws': { group: 'Kho Dữ Liệu Pháp Luật', name: 'Tra Cứu Kho Luật' },
-  '/gaps': { group: 'Kho Dữ Liệu Pháp Luật', name: 'Khoảng Trống Tri Thức' },
-  '/contracts': { group: 'Công Cụ Pháp Lý AI', name: 'Thử Nghiệm Hợp Đồng' },
-  '/configs': { group: 'Hệ Thống', name: 'Cấu Hình Động' },
+const ROUTE_CONFIG: Record<string, { name: string }> = {
+  '/': { name: 'Tổng Quan Gateway' },
+  '/sessions': { name: 'Kiểm Toán Phiên AI' },
+  '/laws': { name: 'Tra Cứu Kho Luật' },
+  '/gaps': { name: 'Khoảng Trống Tri Thức' },
+  '/contracts': { name: 'Thử Nghiệm Hợp Đồng' },
+  '/configs': { name: 'Cấu Hình Động Hệ Thống' },
 };
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -110,7 +108,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
           {/* Breadcrumbs dẫn hướng */}
           <Breadcrumbs variant="supporting">
-            <BreadcrumbItem href="/">{currentRoute.group}</BreadcrumbItem>
+            <BreadcrumbItem href="/">CivicLaw AI</BreadcrumbItem>
             <BreadcrumbItem isCurrent>{currentRoute.name}</BreadcrumbItem>
           </Breadcrumbs>
         </HStack>
@@ -162,62 +160,65 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     />
   );
 
-  // SideNav tinh gọn: Bắt đầu ngay với các phân nhóm chuyên môn
+  // SideNav phẳng (flat list), loại bỏ toàn bộ group thừa, tăng kích thước menu item
   const sideNav = (
     <SideNav
       footer={
         <Section padding={3} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <Text type="supporting" style={{ fontSize: '11px', textAlign: 'center', display: 'block' }}>
+          <Text type="supporting" style={{ fontSize: '11.5px', textAlign: 'center', display: 'block', color: '#64748B' }}>
             CivicLaw AI • Grounded Legal Assistant
           </Text>
         </Section>
       }
     >
-      {/* Phân nhóm 1: Vận hành & Giám sát */}
-      <SideNavSection title="VẬN HÀNH & GIÁM SÁT">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingBlock: '8px' }}>
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>⚡</span>}
           label="Tổng quan Gateway"
           href="/"
           isSelected={pathname === '/'}
         />
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>💬</span>}
           label="Kiểm toán Phiên AI"
           href="/sessions"
           isSelected={pathname === '/sessions'}
           endContent={<StatusDot variant="success" label="100% Grounded" tooltip="100% Grounded" />}
         />
-      </SideNavSection>
-
-      {/* Phân nhóm 2: Kho Tri Thức Pháp Luật */}
-      <SideNavSection title="KHO DỮ LIỆU PHÁP LUẬT">
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>📚</span>}
           label="Tra cứu Kho Luật"
           href="/laws"
           isSelected={pathname === '/laws'}
           endContent={<Badge label="4.7k" variant="teal" />}
         />
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>⚠️</span>}
           label="Khoảng trống Tri thức"
           href="/gaps"
           isSelected={pathname === '/gaps'}
           endContent={<Badge label="Triage" variant="warning" />}
         />
-      </SideNavSection>
-
-      {/* Phân nhóm 3: Công Cụ & Thử Nghiệm AI */}
-      <SideNavSection title="CÔNG CỤ PHÁP LÝ AI">
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>⚖️</span>}
           label="Thử nghiệm Hợp đồng"
           href="/contracts"
           isSelected={pathname === '/contracts'}
           endContent={<Badge label="AI" variant="blue" />}
         />
         <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>⚙️</span>}
           label="Cấu hình Hệ thống"
           href="/configs"
           isSelected={pathname === '/configs'}
         />
-      </SideNavSection>
+      </div>
     </SideNav>
   );
 

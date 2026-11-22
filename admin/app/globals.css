@@ -132,24 +132,43 @@ div[class*="AppShell"] {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+/* SideNav Container: Rộng rãi chuẩn CRM 250px */
+aside,
+[data-side-nav],
+div[class*="SideNav"] {
+  width: 250px !important;
+  min-width: 250px !important;
+}
+
+/* SideNav Items: Kích thước lớn hơn, chữ rõ ràng, khoảng cách thoải mái */
 div[class*="SideNavItem"],
 button[class*="SideNavItem"],
 a[class*="SideNavItem"] {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  min-height: 42px !important;
+  padding: 8px 14px !important;
+  margin: 3px 6px !important;
+  border-radius: 8px !important;
   color: #94A3B8 !important;
-  transition: all 0.15s ease-in-out;
+  letter-spacing: -0.01em !important;
+  transition: all 0.16s ease-in-out;
 }
 
 div[class*="SideNavItem"]:hover,
 button[class*="SideNavItem"]:hover,
 a[class*="SideNavItem"]:hover {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
   color: #F8FAFC !important;
 }
 
 [aria-current="page"],
 [data-selected="true"],
 .is-selected {
-  background-color: rgba(37, 99, 235, 0.12) !important;
+  background-color: rgba(37, 99, 235, 0.16) !important;
   color: #60A5FA !important;
+  font-weight: 600 !important;
+  box-shadow: inset 3px 0 0 #3B82F6 !important;
 }
+
 
