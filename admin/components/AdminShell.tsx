@@ -23,6 +23,7 @@ import {
 } from '@astryxdesign/core';
 import { themes, defaultThemeSlug } from '../astryx-themes';
 import { GlobalSearchInput } from './GlobalSearchInput';
+import { fetchCurrentUser, logoutAdmin } from '@/lib/api-client';
 
 interface CurrentUser {
   id?: string;
@@ -48,8 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (pathname === '/login') return;
 
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
+    fetchCurrentUser()
       .then((data) => {
         if (data?.authenticated && data?.user) {
           setCurrentUser(data.user);
@@ -60,7 +60,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await logoutAdmin();
     } finally {
       window.location.href = '/login';
     }

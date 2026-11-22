@@ -14,6 +14,7 @@ import {
   TextInput,
   Divider,
 } from '@astryxdesign/core';
+import { loginAdmin } from '@/lib/api-client';
 
 function LoginForm() {
   const router = useRouter();
@@ -37,15 +38,9 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
+      const data = await loginAdmin({ email: email.trim(), password });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
+      if (!data.success) {
         setErrorMessage(data.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại tài khoản và mật khẩu.');
         setLoading(false);
         return;
@@ -54,8 +49,9 @@ function LoginForm() {
       // Đăng nhập thành công -> Chuyển hướng tới trang dự định hoặc dashboard
       router.push(redirectTarget);
       router.refresh();
-    } catch {
-      setErrorMessage('Lỗi kết nối tới máy chủ xác thực. Vui lòng thử lại sau.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Lỗi kết nối tới máy chủ xác thực. Vui lòng thử lại sau.';
+      setErrorMessage(message);
       setLoading(false);
     }
   };

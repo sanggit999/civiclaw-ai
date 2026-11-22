@@ -1,8 +1,13 @@
 /**
  * CivicLaw AI - Web Admin Central API Client
  * Cung cấp các hàm gọi API Gateway và quản lý dữ liệu Supabase đồng nhất.
+ * Tái cấu trúc: Toàn bộ các yêu cầu HTTP đều đi qua Centralized httpClient (admin/lib/http-client.ts).
  * Tuân thủ quy chuẩn Anti-Hardcode: Đọc URL Gateway và Supabase từ biến môi trường.
  */
+
+import { httpClient, HttpError } from './http-client';
+
+export { httpClient, HttpError };
 
 export interface GatewayHealthResponse {
   status: 'ok' | 'degraded' | 'error';
@@ -114,6 +119,28 @@ export interface ContractAuditReport {
   auditedAt: string;
 }
 
+export interface AdminUserResponse {
+  authenticated: boolean;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    fullName: string;
+  };
+  error?: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    fullName: string;
+  };
+  error?: string;
+}
+
 // Lấy Gateway URL an toàn, chống hardcode
 export function getGatewayBaseUrl(): string {
   if (typeof window !== 'undefined') {
@@ -123,25 +150,49 @@ export function getGatewayBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3001';
 }
 
+// ==========================================
+// 1. Module Xác Thực (Centralized Auth Calls)
+// ==========================================
+
+/**
+ * Đăng nhập quản trị viên qua API Route
+ */
+export async function loginAdmin(credentials: { email: string; password: string }): Promise<LoginResponse> {
+  return httpClient.post<LoginResponse>('/api/auth/login', credentials, {
+    skipAuthRedirect: true,
+  });
+}
+
+/**
+ * Đăng xuất quản trị viên và xóa cookie phiên
+ */
+export async function logoutAdmin(): Promise<{ success: boolean; message?: string }> {
+  return httpClient.post<{ success: boolean; message?: string }>('/api/auth/logout', {});
+}
+
+/**
+ * Kiểm tra danh tính phiên làm việc hiện tại
+ */
+export async function fetchCurrentUser(): Promise<AdminUserResponse> {
+  return httpClient.get<AdminUserResponse>('/api/auth/me', {
+    skipAuthRedirect: true,
+  });
+}
+
+// ==========================================
+// 2. Module Gateway & Tra Cứu Luật
+// ==========================================
+
 /**
  * Kiểm tra trạng thái sức khỏe toàn diện của Central API Gateway
  */
 export async function fetchGatewayHealth(): Promise<GatewayHealthResponse> {
   const baseUrl = getGatewayBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/health`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      cache: 'no-store',
+    const raw = await httpClient.get<Record<string, any>>(`${baseUrl}/health`, {
+      timeoutMs: 5000,
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const raw = (await res.json()) as Record<string, any>;
     const dbConnected =
       raw?.database?.connected ??
       (raw?.dependencies?.database === 'healthy' || raw?.dependencies?.database === 'connected');
@@ -192,20 +243,12 @@ export async function searchLaws(
 ): Promise<LegalSearchResponse> {
   const baseUrl = getGatewayBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ query, domain, limit }),
+    const raw = await httpClient.post<Record<string, any>>(`${baseUrl}/search`, {
+      query,
+      domain,
+      limit,
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const raw = (await res.json()) as Record<string, any>;
     const searchData = raw?.data || raw;
     const rawList = Array.isArray(searchData?.results) ? searchData.results : [];
 
@@ -214,7 +257,12 @@ export async function searchLaws(
       if (item?.chunk) {
         return {
           id: item.chunk.id || `chunk-${idx}`,
-          document_number: item.chunk.document_number || item.chunk.documentNumber || (item.chunk.domain === 'Giao thông' || domain === 'Giao thông' ? '100/2019/NĐ-CP' : 'Văn bản Luật'),
+          document_number:
+            item.chunk.document_number ||
+            item.chunk.documentNumber ||
+            (item.chunk.domain === 'Giao thông' || domain === 'Giao thông'
+              ? '100/2019/NĐ-CP'
+              : 'Văn bản Luật'),
           article_number: item.chunk.article_number || item.chunk.articleNumber || '',
           clause_number: item.chunk.clause_number || item.chunk.clauseNumber || '',
           title: item.chunk.title || '',
@@ -244,7 +292,7 @@ export async function searchLaws(
       total: searchData?.total ?? results.length,
       results,
     };
-  } catch (error) {
+  } catch {
     // Fallback kết quả mô phỏng mẫu từ 5 bộ luật để kiểm thử offline
     return {
       query,
@@ -258,7 +306,8 @@ export async function searchLaws(
           clause_number: 'Khoản 8',
           title: 'Xử phạt vi phạm nồng độ cồn',
           domain: domain || 'Giao thông',
-          content: 'Phạt tiền từ 30.000.000 đồng đến 40.000.000 đồng đối với người điều khiển xe ô tô trên đường mà trong máu hoặc hơi thở có nồng độ cồn vượt quá 80 miligam/100 mililít máu hoặc vượt quá 0,4 miligam/1 lít khí thở.',
+          content:
+            'Phạt tiền từ 30.000.000 đồng đến 40.000.000 đồng đối với người điều khiển xe ô tô trên đường mà trong máu hoặc hơi thở có nồng độ cồn vượt quá 80 miligam/100 mililít máu hoặc vượt quá 0,4 miligam/1 lít khí thở.',
           score: 0.95,
           similarity: 0.95,
         },
@@ -267,19 +316,20 @@ export async function searchLaws(
   }
 }
 
+// ==========================================
+// 3. Module Khoảng Trống Tri Thức (Gaps)
+// ==========================================
+
 /**
  * Lấy danh sách câu hỏi chưa được giải quyết (Knowledge Gaps)
- * Ưu tiên gọi Route Handler /api/gaps kết nối Supabase Cloud trực tiếp
+ * Gọi Route Handler /api/gaps kết nối Supabase Cloud trực tiếp
  */
 export async function fetchUnresolvedQueries(): Promise<UnresolvedQueryItem[]> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/gaps', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data as UnresolvedQueryItem[];
-        }
+      const data = await httpClient.get<UnresolvedQueryItem[]>('/api/gaps');
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
       }
     } catch {
       // Tự động chuyển sang fallback dự phòng khi offline
@@ -324,14 +374,10 @@ export async function updateUnresolvedQueryStatus(
 ): Promise<{ success: boolean; id: string; status: string }> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/gaps', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status }),
+      return await httpClient.patch<{ success: boolean; id: string; status: string }>('/api/gaps', {
+        id,
+        status,
       });
-      if (res.ok) {
-        return await res.json();
-      }
     } catch {
       // Fallback
     }
@@ -339,18 +385,19 @@ export async function updateUnresolvedQueryStatus(
   return { success: true, id, status };
 }
 
+// ==========================================
+// 4. Module Cấu Hình Động (System Configs)
+// ==========================================
+
 /**
  * Lấy danh sách cấu hình động của hệ thống từ Supabase Cloud
  */
 export async function fetchSystemConfigs(): Promise<SystemConfigItem[]> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/configs', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data as SystemConfigItem[];
-        }
+      const data = await httpClient.get<SystemConfigItem[]>('/api/configs');
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
       }
     } catch {
       // Fallback
@@ -394,14 +441,10 @@ export async function updateSystemConfig(
 ): Promise<{ success: boolean; key: string; value: unknown }> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/configs', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value }),
+      return await httpClient.put<{ success: boolean; key: string; value: unknown }>('/api/configs', {
+        key,
+        value,
       });
-      if (res.ok) {
-        return await res.json();
-      }
     } catch {
       // Fallback
     }
@@ -409,16 +452,17 @@ export async function updateSystemConfig(
   return { success: true, key, value };
 }
 
+// ==========================================
+// 5. Module Thống Kê & Phiên Hội Thoại (CRM)
+// ==========================================
+
 /**
  * Lấy số liệu thống kê tổng hợp của 5 bảng cơ sở dữ liệu
  */
 export async function fetchAdminStats(): Promise<AdminSystemStats> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/stats', { cache: 'no-store' });
-      if (res.ok) {
-        return (await res.json()) as AdminSystemStats;
-      }
+      return await httpClient.get<AdminSystemStats>('/api/stats');
     } catch {
       // Fallback
     }
@@ -442,12 +486,9 @@ export async function fetchAdminStats(): Promise<AdminSystemStats> {
 export async function fetchChatSessions(): Promise<ChatSessionAdminView[]> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/sessions', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return data as ChatSessionAdminView[];
-        }
+      const data = await httpClient.get<ChatSessionAdminView[]>('/api/sessions');
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
       }
     } catch {
       // Fallback
@@ -462,12 +503,11 @@ export async function fetchChatSessions(): Promise<ChatSessionAdminView[]> {
 export async function fetchChatSessionMessages(sessionId: string): Promise<ChatMessageAdminView[]> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch(`/api/sessions?id=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          return data as ChatMessageAdminView[];
-        }
+      const data = await httpClient.get<ChatMessageAdminView[]>('/api/sessions', {
+        params: { id: sessionId },
+      });
+      if (Array.isArray(data)) {
+        return data;
       }
     } catch {
       // Fallback
@@ -475,6 +515,10 @@ export async function fetchChatSessionMessages(sessionId: string): Promise<ChatM
   }
   return [];
 }
+
+// ==========================================
+// 6. Module Kiểm Toán Hợp Đồng (Contract Auditor)
+// ==========================================
 
 /**
  * Gọi Central API Gateway thực hiện rà soát hợp đồng kiểm toán pháp lý
@@ -485,57 +529,66 @@ export async function auditContractDirect(
 ): Promise<ContractAuditReport> {
   const baseUrl = getGatewayBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/contracts/audit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ contractText, contractType }),
+    const raw = await httpClient.post<Record<string, any>>(`${baseUrl}/contracts/audit`, {
+      contractText,
+      contractType,
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const raw = (await res.json()) as Record<string, any>;
     const data = raw?.data || raw;
 
     const findings: ContractFindingItem[] = (data?.findings || data?.issues || []).map((f: any) => ({
       clauseId: f?.clauseId || f?.clause_id,
       clauseTitle: f?.clauseTitle || f?.clause_title || 'Điều khoản',
-      riskLevel: (f?.riskLevel || f?.risk_level || (f?.severity === 'CRITICAL' ? 'RED' : f?.severity === 'MEDIUM' ? 'YELLOW' : 'GREEN')).toUpperCase() as 'GREEN' | 'YELLOW' | 'RED',
+      riskLevel: (
+        f?.riskLevel ||
+        f?.risk_level ||
+        (f?.severity === 'CRITICAL' ? 'RED' : f?.severity === 'MEDIUM' ? 'YELLOW' : 'GREEN')
+      ).toUpperCase() as 'GREEN' | 'YELLOW' | 'RED',
       issue: f?.issue || f?.description || f?.reason || 'Phát hiện điều khoản rủi ro',
       recommendation: f?.recommendation || f?.suggested_edit || 'Xem xét điều chỉnh theo quy định pháp luật',
       legalBasis: f?.legalBasis || f?.legal_basis || f?.relevant_law,
     }));
 
     return {
-      overallRisk: (data?.overallRisk || data?.overall_risk || (findings.some(f => f.riskLevel === 'RED') ? 'RED' : findings.length > 0 ? 'YELLOW' : 'GREEN')) as 'GREEN' | 'YELLOW' | 'RED',
-      riskScore: typeof data?.riskScore === 'number' ? data.riskScore : (findings.filter(f => f.riskLevel === 'RED').length * 35 + findings.filter(f => f.riskLevel === 'YELLOW').length * 15),
+      overallRisk: (data?.overallRisk ||
+        data?.overall_risk ||
+        (findings.some((f) => f.riskLevel === 'RED')
+          ? 'RED'
+          : findings.length > 0
+          ? 'YELLOW'
+          : 'GREEN')) as 'GREEN' | 'YELLOW' | 'RED',
+      riskScore:
+        typeof data?.riskScore === 'number'
+          ? data.riskScore
+          : findings.filter((f) => f.riskLevel === 'RED').length * 35 +
+            findings.filter((f) => f.riskLevel === 'YELLOW').length * 15,
       summary: data?.summary || 'Kết quả kiểm toán hợp đồng tự động bởi CivicLaw Auditor Agent.',
       findings,
       auditedAt: new Date().toISOString(),
     };
-  } catch (error) {
+  } catch {
     // Trả về báo cáo phân tích mẫu khi offline
     return {
       overallRisk: 'YELLOW',
       riskScore: 45,
-      summary: 'Phát hiện một số điều khoản bất lợi trong hợp đồng mẫu về tiền đặt cọc và thời hạn thông báo chấm dứt hợp đồng.',
+      summary:
+        'Phát hiện một số điều khoản bất lợi trong hợp đồng mẫu về tiền đặt cọc và thời hạn thông báo chấm dứt hợp đồng.',
       findings: [
         {
           clauseTitle: 'Điều 4: Tiền đặt cọc',
           riskLevel: 'RED',
-          issue: 'Điều khoản quy định bên thuê mất trắng 100% tiền cọc ngay khi chậm nộp tiền thuê 3 ngày mà không có thỏa thuận gia hạn.',
-          recommendation: 'Cần bổ sung thời gian gia hạn tối thiểu 15 ngày và điều kiện hoàn cọc theo Điều 328 Bộ luật Dân sự 2015.',
+          issue:
+            'Điều khoản quy định bên thuê mất trắng 100% tiền cọc ngay khi chậm nộp tiền thuê 3 ngày mà không có thỏa thuận gia hạn.',
+          recommendation:
+            'Cần bổ sung thời gian gia hạn tối thiểu 15 ngày và điều kiện hoàn cọc theo Điều 328 Bộ luật Dân sự 2015.',
           legalBasis: 'Điều 328 Bộ luật Dân sự 2015',
         },
         {
           clauseTitle: 'Điều 7: Chấm dứt hợp đồng',
           riskLevel: 'YELLOW',
           issue: 'Bên cho thuê có quyền lấy lại nhà bất cứ lúc nào chỉ cần báo trước 3 ngày.',
-          recommendation: 'Theo khoản 4 Điều 132 Luật Nhà ở 2023, thời hạn báo trước tối thiểu phải là 30 ngày.',
+          recommendation:
+            'Theo khoản 4 Điều 132 Luật Nhà ở 2023, thời hạn báo trước tối thiểu phải là 30 ngày.',
           legalBasis: 'Khoản 4 Điều 132 Luật Nhà ở 2023',
         },
       ],
@@ -543,4 +596,3 @@ export async function auditContractDirect(
     };
   }
 }
-
