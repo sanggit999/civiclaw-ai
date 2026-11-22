@@ -92,13 +92,6 @@ export default function KnowledgeGapsPage() {
     return item.status === filterStatus;
   });
 
-  const statusTabs: Array<{ id: FilterStatus; label: string; count: number }> = [
-    { id: 'all', label: 'Tất cả câu hỏi', count: items.length },
-    { id: 'unreviewed', label: 'Chờ xử lý', count: unreviewedCount },
-    { id: 'resolved', label: 'Đã giải quyết', count: resolvedCount },
-    { id: 'ignored', label: 'Đã bỏ qua', count: ignoredCount },
-  ];
-
   const tableData: GapRow[] = filteredItems.map((item) => ({
     id: item.id,
     query_text: item.query_text,
@@ -115,10 +108,17 @@ export default function KnowledgeGapsPage() {
       header: 'Nội dung câu hỏi công dân',
       renderCell: (item: GapRow) => (
         <VStack gap={1}>
-          <Text type="body" style={{ fontWeight: 600, fontSize: '13.5px' }}>
+          <Text type="body" style={{ fontWeight: 600, fontSize: '13.5px', color: '#F8FAFC' }}>
             {item.query_text}
           </Text>
-          <Text type="supporting" style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace' }}>
+          <Text
+            type="supporting"
+            style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-family-code)',
+              color: '#64748B',
+            }}
+          >
             Mã: {item.id}
           </Text>
         </VStack>
@@ -204,6 +204,7 @@ export default function KnowledgeGapsPage() {
             badgeLabel={unreviewedCount > 0 ? 'CẦN CHÚ Ý' : 'HOÀN HẢO'}
             badgeVariant={unreviewedCount > 0 ? 'warning' : 'success'}
             trendLabel={unreviewedCount > 0 ? 'Ưu tiên cao' : 'Sạch sẽ'}
+            trendPositive={unreviewedCount === 0}
           />
         </StackItem>
 
@@ -217,6 +218,7 @@ export default function KnowledgeGapsPage() {
             progress={resolutionRate}
             progressVariant="success"
             trendLabel={`${resolutionRate}% Tỷ lệ giải quyết`}
+            trendPositive={true}
           />
         </StackItem>
 
@@ -228,6 +230,7 @@ export default function KnowledgeGapsPage() {
             badgeLabel="PHÂN TÍCH NHU CẦU"
             badgeVariant="blue"
             trendLabel="Thời gian thực"
+            trendPositive={true}
           />
         </StackItem>
       </HStack>
@@ -266,10 +269,19 @@ export default function KnowledgeGapsPage() {
       </TabList>
 
       {/* Bảng danh sách câu hỏi kèm EmptyState */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
-            <Heading level={3}>Danh Sách Khoảng Trống Cần Xử Lý</Heading>
+            <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+              Danh Sách Khoảng Trống Cần Xử Lý
+            </Heading>
             <Badge label={`${filteredItems.length} câu hỏi`} variant="teal" />
           </HStack>
           {filteredItems.length > 0 ? (
@@ -294,16 +306,25 @@ export default function KnowledgeGapsPage() {
         </VStack>
       </Card>
 
-      {/* Slide-over Drawer Thẩm Định & Ghi Chú Tác Nghiệp (thay thế Modal cũ) */}
+      {/* Slide-over Drawer Thẩm Định & Ghi Chú Tác Nghiệp */}
       <Drawer
         isOpen={targetItem !== null}
         onOpenChange={(isOpen) => !isOpen && closeActionDrawer()}
         side="end"
-        width={540}
+        width={560}
         label="Thẩm định và xử lý khoảng trống tri thức"
       >
         {targetItem && (
-          <VStack gap={4} style={{ padding: '24px' }}>
+          <VStack
+            gap={4}
+            style={{
+              padding: '28px',
+              backgroundColor: '#131B2E',
+              color: '#F8FAFC',
+              minHeight: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
             <DrawerHeader
               title={targetAction === 'resolved' ? 'Xác Nhận Đã Bổ Sung Tri Thức' : 'Xác Nhận Bỏ Qua Khoảng Trống'}
               subtitle={`Lĩnh vực: ${targetItem.domain} • Lượt hỏi: ${targetItem.hit_count}`}
@@ -316,21 +337,37 @@ export default function KnowledgeGapsPage() {
               }
             />
 
-            <Divider />
+            <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
             <VStack gap={2}>
-              <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+              <Text
+                type="supporting"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#94A3B8',
+                }}
+              >
                 CÂU HỎI TỪ CÔNG DÂN:
               </Text>
-              <Card padding={3} style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <Text type="body" style={{ fontWeight: 600, fontSize: '14px' }}>
+              <Card
+                padding={3}
+                style={{
+                  backgroundColor: '#090D16',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '8px',
+                }}
+              >
+                <Text type="body" style={{ fontWeight: 600, fontSize: '14px', color: '#F8FAFC', lineHeight: 1.5 }}>
                   &quot;{targetItem.query_text}&quot;
                 </Text>
               </Card>
             </VStack>
 
-            <VStack gap={2}>
-              <Text type="body" style={{ fontSize: '13px' }}>
+            <VStack gap={3}>
+              <Text type="body" style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.5 }}>
                 {targetAction === 'resolved'
                   ? 'Hành động này đánh dấu câu hỏi đã có dữ liệu điều khoản trong hệ thống hoặc đã được nạp bổ sung vào cơ sở dữ liệu PostgreSQL pgvector.'
                   : 'Bỏ qua câu hỏi này nếu nội dung không thuộc phạm vi 5 bộ luật chính thống hoặc không mang tính pháp lý.'}
@@ -344,7 +381,7 @@ export default function KnowledgeGapsPage() {
               />
             </VStack>
 
-            <Divider />
+            <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
             <HStack gap={3} vAlign="center">
               <StackItem size="fill" />

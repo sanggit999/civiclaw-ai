@@ -112,9 +112,25 @@ export default function ContractPlaygroundPage() {
       description="Thử nghiệm trực tiếp Agentic Contract Auditor đối soát các điều khoản hợp đồng cá nhân với 5 Bộ luật chính thống và phát hiện bẫy pháp lý."
     >
       {/* Thanh lựa chọn Preset mẫu nhanh kiểu Ironclad */}
-      <Card padding={3}>
+      <Card
+        padding={3}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <HStack gap={3} vAlign="center" wrap="wrap">
-          <Text type="supporting" style={{ fontSize: '13px', fontWeight: 600 }}>
+          <Text
+            type="supporting"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: '#94A3B8',
+            }}
+          >
             Mẫu Thử Nghiệm Nhanh:
           </Text>
           {(['rental', 'labor', 'loan'] as const).map((key) => {
@@ -134,10 +150,19 @@ export default function ContractPlaygroundPage() {
       </Card>
 
       {/* Editor nhập văn bản hợp đồng với kiểu dáng Monospace chuyên nghiệp */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
-            <Heading level={3}>Văn Bản Hợp Đồng Cần Rà Soát</Heading>
+            <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+              Văn Bản Hợp Đồng Cần Rà Soát
+            </Heading>
             <Badge label={`Loại: ${contractType}`} variant="teal" />
           </HStack>
 
@@ -147,16 +172,18 @@ export default function ContractPlaygroundPage() {
             rows={11}
             style={{
               width: '100%',
-              padding: '14px',
+              padding: '16px',
               borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              fontSize: '13.5px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              fontFamily: 'var(--font-family-code)',
+              fontSize: '13px',
               lineHeight: '1.6',
               boxSizing: 'border-box',
               resize: 'vertical',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              color: 'inherit',
+              backgroundColor: '#090D16',
+              color: '#F8FAFC',
+              outline: 'none',
+              transition: 'border-color 0.15s ease',
             }}
             placeholder="Dán toàn văn nội dung hợp đồng cá nhân vào đây..."
           />
@@ -168,7 +195,14 @@ export default function ContractPlaygroundPage() {
               size="md"
               onClick={handleRunAudit}
             />
-            <Text type="supporting" style={{ fontSize: '12px' }}>
+            <Text
+              type="supporting"
+              style={{
+                fontSize: '12px',
+                color: '#64748B',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {contractText.length} ký tự • Kết nối Central API Gateway /contracts/audit
             </Text>
           </HStack>
@@ -202,6 +236,7 @@ export default function ContractPlaygroundPage() {
                 progress={report.riskScore}
                 progressVariant={report.overallRisk === 'RED' ? 'warning' : 'success'}
                 trendLabel={report.overallRisk === 'RED' ? 'Cảnh báo đỏ' : 'Khả dụng'}
+                trendPositive={report.overallRisk === 'GREEN'}
               />
             </StackItem>
 
@@ -210,9 +245,10 @@ export default function ContractPlaygroundPage() {
                 title="Số Điều Khoản Bất Thường"
                 value={`${report.findings.length} Điều Khoản`}
                 subtitle="Cần yêu cầu bên cho thuê/sử dụng lao động sửa đổi"
-                badgeLabel="BẤY PHÁP LÝ"
+                badgeLabel="BẪY PHÁP LÝ"
                 badgeVariant="teal"
                 trendLabel="Cần đàm phán"
+                trendPositive={false}
               />
             </StackItem>
 
@@ -226,28 +262,47 @@ export default function ContractPlaygroundPage() {
                 progress={100}
                 progressVariant="success"
                 trendLabel="100% Căn cứ"
+                trendPositive={true}
               />
             </StackItem>
           </HStack>
 
           {/* Đánh giá chung của AI */}
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={2}>
               <HStack gap={2} vAlign="center">
                 <StatusDot variant={report.overallRisk === 'RED' ? 'warning' : 'success'} label="Tóm tắt" />
-                <Heading level={3}>Tóm Tắt Nhận Định Pháp Lý Từ CivicLaw Auditor</Heading>
+                <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  Tóm Tắt Nhận Định Pháp Lý Từ CivicLaw Auditor
+                </Heading>
               </HStack>
-              <Text type="body" style={{ lineHeight: '1.7', fontSize: '13.5px' }}>
+              <Text type="body" style={{ lineHeight: '1.7', fontSize: '13.5px', color: '#CBD5E1' }}>
                 {report.summary}
               </Text>
             </VStack>
           </Card>
 
           {/* Chi tiết từng điều khoản vi phạm */}
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={4}>
               <HStack gap={2} vAlign="center">
-                <Heading level={3}>Chi Tiết Các Điều Khoản Cần Điều Chỉnh</Heading>
+                <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  Chi Tiết Các Điều Khoản Cần Điều Chỉnh
+                </Heading>
                 <Badge label={`${report.findings.length} phát hiện`} variant="warning" />
               </HStack>
 
@@ -259,14 +314,17 @@ export default function ContractPlaygroundPage() {
                       key={idx}
                       padding={3}
                       style={{
-                        borderLeft: isRed ? '4px solid #ef4444' : '4px solid #f59e0b',
+                        borderLeft: isRed ? '4px solid #EF4444' : '4px solid #F59E0B',
                         backgroundColor: isRed ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                        border: isRed ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
+                        border: isRed ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)',
+                        borderRadius: '8px',
                       }}
                     >
                       <VStack gap={2}>
                         <HStack gap={2} vAlign="center">
-                          <Heading level={4}>{finding.clauseTitle || `Điều khoản ${idx + 1}`}</Heading>
+                          <Heading level={4} style={{ fontSize: '14.5px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                            {finding.clauseTitle || `Điều khoản ${idx + 1}`}
+                          </Heading>
                           <Badge
                             label={isRed ? 'Vi Phạm Nghiêm Trọng' : 'Rủi Ro Trung Bình'}
                             variant={isRed ? 'warning' : 'neutral'}
@@ -274,26 +332,61 @@ export default function ContractPlaygroundPage() {
                         </HStack>
 
                         <VStack gap={1}>
-                          <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
-                            PHÁT HIỆN RỦI RO / BẤY ĐIỀU KHOẢN:
+                          <Text
+                            type="supporting"
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              color: isRed ? '#FCA5A5' : '#FCD34D',
+                            }}
+                          >
+                            PHÁT HIỆN RỦI RO / BẪY ĐIỀU KHOẢN:
                           </Text>
-                          <Text type="body" style={{ fontWeight: 500, fontSize: '13.5px' }}>
+                          <Text type="body" style={{ fontWeight: 500, fontSize: '13.5px', color: '#F8FAFC' }}>
                             {finding.issue}
                           </Text>
                         </VStack>
 
                         <VStack gap={1}>
-                          <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                          <Text
+                            type="supporting"
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              color: '#94A3B8',
+                            }}
+                          >
                             KHUYẾN NGHỊ ĐIỀU CHỈNH:
                           </Text>
-                          <Text type="body" style={{ fontSize: '13.5px' }}>
+                          <Text type="body" style={{ fontSize: '13.5px', color: '#CBD5E1', lineHeight: 1.5 }}>
                             {finding.recommendation}
                           </Text>
                         </VStack>
 
                         {finding.legalBasis && (
-                          <HStack gap={2} vAlign="center" style={{ marginTop: '4px', borderTop: '1px dashed #e2e8f0', paddingTop: '6px' }}>
-                            <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                          <HStack
+                            gap={2}
+                            vAlign="center"
+                            style={{
+                              marginTop: '4px',
+                              borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+                              paddingTop: '8px',
+                            }}
+                          >
+                            <Text
+                              type="supporting"
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                color: '#94A3B8',
+                              }}
+                            >
                               CĂN CỨ ĐỐI CHIẾU:
                             </Text>
                             <Badge label={finding.legalBasis} variant="teal" />

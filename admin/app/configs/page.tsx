@@ -9,7 +9,6 @@ import {
   Card,
   Button,
   Badge,
-  Divider,
   TextInput,
   Banner,
   StackItem,
@@ -75,15 +74,24 @@ export default function SystemConfigsPage() {
       )}
 
       {/* Card 1: Trọng số Hybrid Search */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={4}>
           <HStack gap={2} vAlign="center">
             <StackItem size="fill">
-              <Heading level={3}>1. Trọng Số Kết Hợp Hybrid Search</Heading>
+              <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                1. Trọng Số Kết Hợp Hybrid Search
+              </Heading>
             </StackItem>
             <Badge label="Vector + FTS" variant="teal" />
           </HStack>
-          <Text type="supporting">
+          <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
             Tổng trọng số của Vector Search (ngữ nghĩa) và Full-Text Search tsvector (từ khóa chính xác) cần xấp xỉ bằng 1.0.
           </Text>
 
@@ -109,15 +117,24 @@ export default function SystemConfigsPage() {
       </Card>
 
       {/* Card 2: Ngưỡng tự tin trích dẫn pháp lý */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={4}>
           <HStack gap={2} vAlign="center">
             <StackItem size="fill">
-              <Heading level={3}>2. Ngưỡng Tự Tin Trích Dẫn Pháp Lý (Confidence Threshold)</Heading>
+              <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                2. Ngưỡng Tự Tin Trích Dẫn Pháp Lý (Confidence Threshold)
+              </Heading>
             </StackItem>
             <Badge label="Chống Bịa Đặt" variant="blue" />
           </HStack>
-          <Text type="supporting">
+          <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
             Khi điểm tương đồng cao nhất của kho luật thấp hơn ngưỡng này, trợ lý AI sẽ từ chối suy đoán và chuyển câu hỏi sang hàng đợi Knowledge Gaps.
           </Text>
 
@@ -131,16 +148,25 @@ export default function SystemConfigsPage() {
       </Card>
 
       {/* Card 3: Bộ từ dừng Stop Words tiếng Việt */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
             <StackItem size="fill">
-              <Heading level={3}>3. Bộ Lọc Từ Dừng Tiếng Việt (Vietnamese Stop Words)</Heading>
+              <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                3. Bộ Lọc Từ Dừng Tiếng Việt (Vietnamese Stop Words)
+              </Heading>
             </StackItem>
             <Badge label="Tiền xử lý FTS" variant="neutral" />
           </HStack>
-          <Text type="supporting">
-            Các hư từ phổ biến được loại bỏ trước khi chuyển câu hỏi sang định dạng `to_tsquery('vietnamese', ...)` trong PostgreSQL.
+          <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
+            Các hư từ phổ biến được loại bỏ trước khi chuyển câu hỏi sang định dạng `to_tsquery(&#39;vietnamese&#39;, ...)` trong PostgreSQL.
           </Text>
           <HStack gap={2} wrap="wrap">
             {['là', 'của', 'những', 'các', 'được', 'cho', 'với', 'trong', 'về', 'tại', 'như', 'khi', 'nào', 'sao'].map((w) => (

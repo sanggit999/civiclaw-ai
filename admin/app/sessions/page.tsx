@@ -95,10 +95,17 @@ export default function SessionsAuditPage() {
       header: 'Tiêu đề phiên tư vấn',
       renderCell: (item: SessionRow) => (
         <VStack gap={1}>
-          <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+          <Text type="body" style={{ fontWeight: 600, fontSize: '13px', color: '#F8FAFC' }}>
             {item.title}
           </Text>
-          <Text type="supporting" style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace' }}>
+          <Text
+            type="supporting"
+            style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-family-code)',
+              color: '#64748B',
+            }}
+          >
             {item.id}
           </Text>
         </VStack>
@@ -115,7 +122,14 @@ export default function SessionsAuditPage() {
       key: 'created_at',
       header: 'Khởi tạo',
       renderCell: (item: SessionRow) => (
-        <Text type="supporting" style={{ fontSize: '12px' }}>
+        <Text
+          type="supporting"
+          style={{
+            fontSize: '12px',
+            color: '#94A3B8',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {item.created_at}
         </Text>
       ),
@@ -157,6 +171,7 @@ export default function SessionsAuditPage() {
             badgeLabel="LƯỢNG TRUY CẬP"
             badgeVariant="teal"
             trendLabel="+12% tuần này"
+            trendPositive={true}
           />
         </StackItem>
 
@@ -168,6 +183,7 @@ export default function SessionsAuditPage() {
             badgeLabel="ĐA LƯỢT"
             badgeVariant="blue"
             trendLabel="Trung bình 4 tin/phiên"
+            trendPositive={true}
           />
         </StackItem>
 
@@ -181,6 +197,7 @@ export default function SessionsAuditPage() {
             progress={100}
             progressVariant="success"
             trendLabel="Tuyệt đối"
+            trendPositive={true}
           />
         </StackItem>
       </HStack>
@@ -189,10 +206,19 @@ export default function SessionsAuditPage() {
       <HStack gap={4} vAlign="start" wrap="wrap">
         {/* Cột trái: Danh sách phiên */}
         <StackItem size="fill" style={{ minWidth: '450px' }}>
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={3}>
               <HStack gap={2} vAlign="center">
-                <Heading level={3}>Danh Sách Phiên Tư Vấn Gần Đây</Heading>
+                <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  Danh Sách Phiên Tư Vấn Gần Đây
+                </Heading>
                 <Badge label={`${sessions.length} phiên`} variant="teal" />
               </HStack>
               <Table data={tableData} columns={columns} />
@@ -202,15 +228,29 @@ export default function SessionsAuditPage() {
 
         {/* Cột phải: Khung hội thoại & Căn cứ trích dẫn */}
         <StackItem size="fill" style={{ minWidth: '480px' }}>
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={4}>
               <HStack gap={2} vAlign="center">
                 <StackItem size="fill">
                   <VStack gap={1}>
-                    <Heading level={3}>
+                    <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
                       {selectedSession?.title || 'Chi Tiết Phiên Tư Vấn'}
                     </Heading>
-                    <Text type="supporting" style={{ fontSize: '12px', fontFamily: 'ui-monospace, monospace' }}>
+                    <Text
+                      type="supporting"
+                      style={{
+                        fontSize: '11px',
+                        fontFamily: 'var(--font-family-code)',
+                        color: '#64748B',
+                      }}
+                    >
                       ID: {selectedSessionId || 'Chưa chọn'}
                     </Text>
                   </VStack>
@@ -221,12 +261,12 @@ export default function SessionsAuditPage() {
                 />
               </HStack>
 
-              <Divider />
+              <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
               {/* Danh sách tin nhắn */}
               <VStack gap={3}>
                 {messages.length === 0 && !loadingMessages && (
-                  <Text type="supporting">Chưa có tin nhắn trong phiên này.</Text>
+                  <Text type="supporting" style={{ color: '#94A3B8' }}>Chưa có tin nhắn trong phiên này.</Text>
                 )}
 
                 {messages.map((msg) => {
@@ -236,9 +276,10 @@ export default function SessionsAuditPage() {
                       key={msg.id}
                       padding={3}
                       style={{
-                        borderLeft: isUser ? '4px solid #3b82f6' : '4px solid #10b981',
-                        backgroundColor: isUser ? 'rgba(59, 130, 246, 0.06)' : 'rgba(16, 185, 129, 0.06)',
-                        border: isUser ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                        borderLeft: isUser ? '3px solid #2563EB' : '3px solid #10B981',
+                        backgroundColor: isUser ? 'rgba(37, 99, 235, 0.06)' : 'rgba(16, 185, 129, 0.06)',
+                        border: isUser ? '1px solid rgba(37, 99, 235, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                        borderRadius: '8px',
                       }}
                     >
                       <VStack gap={2}>
@@ -251,7 +292,14 @@ export default function SessionsAuditPage() {
                             label={isUser ? 'Công Dân (Người Hỏi)' : 'Trợ Lý CivicLaw AI'}
                             variant={isUser ? 'blue' : 'success'}
                           />
-                          <Text type="supporting" style={{ fontSize: '12px' }}>
+                          <Text
+                            type="supporting"
+                            style={{
+                              fontSize: '11.5px',
+                              color: '#64748B',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}
+                          >
                             {new Date(msg.createdAt).toLocaleTimeString('vi-VN')}
                           </Text>
                           {!isUser && (
@@ -262,14 +310,38 @@ export default function SessionsAuditPage() {
                           )}
                         </HStack>
 
-                        <Text type="body" style={{ whiteSpace: 'pre-line', lineHeight: '1.6', fontSize: '13.5px' }}>
+                        <Text
+                          type="body"
+                          style={{
+                            whiteSpace: 'pre-line',
+                            lineHeight: '1.6',
+                            fontSize: '13.5px',
+                            color: '#F8FAFC',
+                          }}
+                        >
                           {msg.content}
                         </Text>
 
                         {/* Danh sách thẻ trích dẫn nguồn luật */}
                         {!isUser && msg.citations && msg.citations.length > 0 && (
-                          <VStack gap={1} style={{ marginTop: '8px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px' }}>
-                            <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                          <VStack
+                            gap={1}
+                            style={{
+                              marginTop: '8px',
+                              borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+                              paddingTop: '8px',
+                            }}
+                          >
+                            <Text
+                              type="supporting"
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                color: '#94A3B8',
+                              }}
+                            >
                               CĂN CỨ PHÁP LÝ ĐỐI SOÁT:
                             </Text>
                             <HStack gap={2} wrap="wrap">

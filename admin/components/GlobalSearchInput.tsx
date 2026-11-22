@@ -46,19 +46,19 @@ export function GlobalSearchInput() {
         vAlign="center"
         onClick={() => inputRef.current?.focus()}
         style={{
-          backgroundColor: isFocused ? 'rgba(125, 125, 125, 0.12)' : 'rgba(125, 125, 125, 0.06)',
-          border: isFocused ? '1px solid rgba(56, 189, 248, 0.75)' : '1px solid rgba(125, 125, 125, 0.22)',
-          borderRadius: '6px',
-          paddingInline: '10px',
-          paddingBlock: '4px',
+          backgroundColor: isFocused ? '#182238' : '#131B2E',
+          border: isFocused ? '1px solid #2563EB' : '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '8px',
+          paddingInline: '12px',
+          paddingBlock: '5px',
           minWidth: '380px',
           maxWidth: '480px',
           transition: 'all 0.18s ease-in-out',
-          boxShadow: isFocused ? '0 0 0 2px rgba(56, 189, 248, 0.18)' : 'none',
+          boxShadow: isFocused ? '0 0 0 2px rgba(37, 99, 235, 0.25)' : 'none',
           cursor: 'text',
         }}
       >
-        <Text type="supporting" style={{ fontSize: '13px', userSelect: 'none', lineHeight: 1 }}>
+        <Text type="supporting" style={{ fontSize: '13px', userSelect: 'none', lineHeight: 1, opacity: 0.7 }}>
           🔍
         </Text>
         <input
@@ -74,8 +74,9 @@ export function GlobalSearchInput() {
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: 'inherit',
-            fontSize: '12px',
+            color: '#F8FAFC',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            fontSize: '12.5px',
             width: '100%',
             minWidth: '220px',
             lineHeight: 1.5,
@@ -91,8 +92,7 @@ export function GlobalSearchInput() {
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'inherit',
-              opacity: 0.6,
+              color: '#94A3B8',
               cursor: 'pointer',
               padding: '2px 4px',
               fontSize: '11px',

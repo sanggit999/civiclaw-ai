@@ -20,9 +20,9 @@ export interface PageContainerProps {
 }
 
 /**
- * Reusable Root Page Layout Container
- * Chuẩn hóa padding, margin, max-width và header cấu trúc thống nhất cho toàn bộ các trang Web Admin
- * Tuân thủ quy chuẩn Meta Astryx Design System và Modern Web CSS Layout (logical properties)
+ * Reusable Root Page Layout Container - Enterprise HRM/CRM Standard
+ * Chuẩn hóa padding, typography, max-width và cấu trúc header thống nhất cho toàn bộ các trang Web Admin.
+ * Lấy cảm hứng từ Linear, Stripe, Vercel Dashboard (High density, crisp 1px borders, subtle transitions).
  */
 export function PageContainer({
   title,
@@ -37,7 +37,7 @@ export function PageContainer({
       style={{
         maxInlineSize: maxWidth,
         marginInline: 'auto',
-        paddingBlock: '20px',
+        paddingBlock: '24px',
         paddingInline: '32px',
         boxSizing: 'border-box',
         width: '100%',
@@ -48,9 +48,29 @@ export function PageContainer({
         <HStack gap={4} vAlign="center" wrap="wrap">
           <StackItem size="fill">
             <VStack gap={1}>
-              <Heading level={2}>{title}</Heading>
+              <Heading
+                level={2}
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  color: '#F8FAFC',
+                  margin: 0,
+                }}
+              >
+                {title}
+              </Heading>
               {description && (
-                <Text type="supporting" style={{ fontSize: '13px' }}>{description}</Text>
+                <Text
+                  type="supporting"
+                  style={{
+                    fontSize: '13px',
+                    color: '#94A3B8',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {description}
+                </Text>
               )}
             </VStack>
           </StackItem>
@@ -61,7 +81,7 @@ export function PageContainer({
           )}
         </HStack>
 
-        <Divider />
+        <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
         {/* Nội Dung Trang */}
         {children}

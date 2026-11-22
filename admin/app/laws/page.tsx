@@ -63,7 +63,7 @@ function LawsBrowserContent() {
     }
   }, []);
 
-  // Đồng bộ và tự động tìm kiếm khi URL thay đổi (hỗ trợ tìm kiếm từ Header Omni-Search hoặc bookmark)
+  // Đồng bộ và tự động tìm kiếm khi URL thay đổi
   useEffect(() => {
     const currentQ = qParam ?? 'nồng độ cồn';
     const currentDomain = domainParam ?? '';
@@ -138,7 +138,7 @@ function LawsBrowserContent() {
       key: 'article_clause',
       header: 'Điều / Khoản',
       renderCell: (item: LawRow) => (
-        <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+        <Text type="body" style={{ fontWeight: 600, fontSize: '13px', color: '#F8FAFC' }}>
           {item.article_clause}
         </Text>
       ),
@@ -147,7 +147,7 @@ function LawsBrowserContent() {
       key: 'domain_title',
       header: 'Tiêu đề quy định',
       renderCell: (item: LawRow) => (
-        <Text type="supporting" style={{ fontSize: '13px' }}>
+        <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
           {item.domain_title}
         </Text>
       ),
@@ -156,7 +156,7 @@ function LawsBrowserContent() {
       key: 'content',
       header: 'Nội dung trích đoạn',
       renderCell: (item: LawRow) => (
-        <Text type="body" style={{ fontSize: '13px' }}>
+        <Text type="body" style={{ fontSize: '13px', color: '#CBD5E1', lineHeight: 1.45 }}>
           {item.content.length > 110 ? `${item.content.slice(0, 110)}...` : item.content}
         </Text>
       ),
@@ -164,22 +164,33 @@ function LawsBrowserContent() {
     {
       key: 'similarity',
       header: 'Độ khớp Hybrid',
-      renderCell: (item: LawRow) => (
-        <HStack gap={2} vAlign="center" style={{ minWidth: '120px' }}>
-          <StackItem size="fill">
-            <ProgressBar
-              value={item.similarity}
-              max={100}
-              label="Độ khớp"
-              isLabelHidden
-              variant={item.similarity >= 85 ? 'success' : 'warning'}
-            />
-          </StackItem>
-          <Text type="supporting" style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-            {item.similarity}%
-          </Text>
-        </HStack>
-      ),
+      renderCell: (item: LawRow) => {
+        const isHighMatch = item.similarity >= 85;
+        return (
+          <HStack gap={2} vAlign="center" style={{ minWidth: '120px' }}>
+            <StackItem size="fill">
+              <ProgressBar
+                value={item.similarity}
+                max={100}
+                label="Độ khớp"
+                isLabelHidden
+                variant={isHighMatch ? 'success' : 'warning'}
+              />
+            </StackItem>
+            <Text
+              type="supporting"
+              style={{
+                fontSize: '12px',
+                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 600,
+                color: isHighMatch ? '#10B981' : '#F59E0B',
+              }}
+            >
+              {item.similarity}%
+            </Text>
+          </HStack>
+        );
+      },
     },
     {
       key: 'actions',
@@ -216,7 +227,14 @@ function LawsBrowserContent() {
       </TabList>
 
       {/* Thanh tìm kiếm toàn diện (Omni-search Bar) */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -254,7 +272,14 @@ function LawsBrowserContent() {
             </HStack>
 
             <HStack gap={2} vAlign="center">
-              <Text type="supporting" style={{ fontSize: '13px' }}>
+              <Text
+                type="supporting"
+                style={{
+                  fontSize: '12.5px',
+                  color: '#94A3B8',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {loading ? 'Đang truy vấn kho luật...' : `Tìm thấy ${total} điều khoản phù hợp`}
               </Text>
               {domain && (
@@ -266,10 +291,19 @@ function LawsBrowserContent() {
       </Card>
 
       {/* Bảng dữ liệu Grid mật độ cao */}
-      <Card padding={4}>
+      <Card
+        padding={4}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
-            <Heading level={3}>Danh Sách Điều Khoản & Căn Cứ Pháp Lý</Heading>
+            <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+              Danh Sách Điều Khoản & Căn Cứ Pháp Lý
+            </Heading>
             <Badge label={`${results.length} hiển thị`} variant="teal" />
           </HStack>
           {results.length > 0 ? (
@@ -284,16 +318,25 @@ function LawsBrowserContent() {
         </VStack>
       </Card>
 
-      {/* Drawer trượt cạnh phải (Slide-Over Sheet) chuẩn CRM/HRM thay thế Modal cũ */}
+      {/* Drawer trượt cạnh phải (Slide-Over Sheet) chuẩn CRM/HRM */}
       <Drawer
         isOpen={selectedLaw !== null}
         onOpenChange={(isOpen) => !isOpen && closeDetailDrawer()}
         side="end"
-        width={580}
+        width={600}
         label="Chi tiết toàn văn điều khoản pháp luật"
       >
         {selectedLaw && (
-          <VStack gap={4} style={{ padding: '24px' }}>
+          <VStack
+            gap={4}
+            style={{
+              padding: '28px',
+              backgroundColor: '#131B2E',
+              color: '#F8FAFC',
+              minHeight: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
             <DrawerHeader
               title={`${selectedLaw.article_number || 'Điều khoản'} ${selectedLaw.clause_number || ''}`}
               subtitle={`${selectedLaw.document_number} • ${selectedLaw.domain || 'Pháp luật Việt Nam'}`}
@@ -306,31 +349,66 @@ function LawsBrowserContent() {
               }
             />
 
-            <Divider />
+            <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
             {/* Tiêu đề điều khoản */}
             {selectedLaw.title && (
               <VStack gap={1}>
-                <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                <Text
+                  type="supporting"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: '#94A3B8',
+                  }}
+                >
                   TIÊU ĐỀ NỘI DUNG:
                 </Text>
-                <Heading level={4}>{selectedLaw.title}</Heading>
+                <Heading level={4} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  {selectedLaw.title}
+                </Heading>
               </VStack>
             )}
 
             {/* Toàn văn nội dung */}
             <VStack gap={2}>
-              <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+              <Text
+                type="supporting"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#94A3B8',
+                }}
+              >
                 NỘI DUNG PHÁP LÝ TOÀN VĂN:
               </Text>
-              <Card padding={3} style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <Text type="body" style={{ lineHeight: '1.7', whiteSpace: 'pre-line', fontSize: '13.5px' }}>
+              <Card
+                padding={3}
+                style={{
+                  backgroundColor: '#090D16',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '8px',
+                }}
+              >
+                <Text
+                  type="body"
+                  style={{
+                    lineHeight: '1.7',
+                    whiteSpace: 'pre-line',
+                    fontSize: '13.5px',
+                    color: '#F8FAFC',
+                  }}
+                >
                   {selectedLaw.content}
                 </Text>
               </Card>
             </VStack>
 
-            <Divider />
+            <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
             {/* Thao tác Drawer */}
             <HStack gap={2} vAlign="center">
@@ -367,7 +445,7 @@ export default function LawsBrowserPage() {
           title="Tra Cứu Kho Dữ Liệu Luật (4.715 Chunks)"
           description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector với độ trễ thấp."
         >
-          <Text type="supporting">Đang tải giao diện tra cứu pháp luật...</Text>
+          <Text type="supporting" style={{ color: '#94A3B8' }}>Đang tải giao diện tra cứu pháp luật...</Text>
         </PageContainer>
       }
     >

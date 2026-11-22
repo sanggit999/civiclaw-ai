@@ -38,6 +38,7 @@ interface ActivityEvent {
   badgeVariant: 'teal' | 'blue' | 'warning' | 'success' | 'neutral';
   title: string;
   detail: string;
+  accentColor: string;
 }
 
 export default function DashboardPage() {
@@ -128,7 +129,15 @@ export default function DashboardPage() {
       key: 'path',
       header: 'Endpoint Path',
       renderCell: (item: EndpointRow) => (
-        <Text type="body" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '13px' }}>
+        <Text
+          type="body"
+          style={{
+            fontFamily: 'var(--font-family-code)',
+            fontSize: '12.5px',
+            color: '#38BDF8',
+            letterSpacing: '-0.01em',
+          }}
+        >
           {item.path}
         </Text>
       ),
@@ -137,7 +146,7 @@ export default function DashboardPage() {
       key: 'purpose',
       header: 'Nghiệp vụ Xử lý',
       renderCell: (item: EndpointRow) => (
-        <Text type="supporting" style={{ fontSize: '13px' }}>
+        <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
           {item.purpose}
         </Text>
       ),
@@ -152,7 +161,14 @@ export default function DashboardPage() {
             label={item.status}
             isPulsing={item.status === 'Streaming'}
           />
-          <Text type="body" style={{ fontSize: '13px' }}>
+          <Text
+            type="body"
+            style={{
+              fontSize: '12.5px',
+              fontWeight: 500,
+              color: item.status === 'Degraded' ? '#F59E0B' : '#10B981',
+            }}
+          >
             {item.status}
           </Text>
         </HStack>
@@ -168,6 +184,7 @@ export default function DashboardPage() {
       category: 'SEARCH',
       badgeLabel: 'Hybrid Search',
       badgeVariant: 'teal',
+      accentColor: '#0EA5E9',
       title: 'Tra cứu Nghị định 100/2019/NĐ-CP (Điều 5)',
       detail: 'Công dân truy vấn quy định xử phạt vi phạm nồng độ cồn xe máy (Độ khớp 94%).',
     },
@@ -177,6 +194,7 @@ export default function DashboardPage() {
       category: 'CONTRACT',
       badgeLabel: 'Audit Hợp Đồng',
       badgeVariant: 'blue',
+      accentColor: '#2563EB',
       title: 'Rà soát Hợp đồng Thuê nhà cá nhân',
       detail: 'Phát hiện 2 điều khoản rủi ro: Tịch thu cọc sau 3 ngày và báo trước dưới 30 ngày.',
     },
@@ -186,6 +204,7 @@ export default function DashboardPage() {
       category: 'CHAT',
       badgeLabel: 'Tư vấn AI',
       badgeVariant: 'success',
+      accentColor: '#10B981',
       title: 'Phiên giải đáp chế độ thai sản & BHXH 2024',
       detail: 'Trích dẫn Điều 31 Luật BHXH 2024, bảo đảm 100% căn cứ pháp lý không bịa đặt.',
     },
@@ -195,6 +214,7 @@ export default function DashboardPage() {
       category: 'GAP',
       badgeLabel: 'Khoảng Trống',
       badgeVariant: 'warning',
+      accentColor: '#F59E0B',
       title: 'Ghi nhận câu hỏi chưa có dữ liệu điều luật',
       detail: 'Truy vấn "thủ tục sang tên sổ đỏ thừa kế không di chúc" cần bổ sung tri thức.',
     },
@@ -204,6 +224,7 @@ export default function DashboardPage() {
       category: 'SYSTEM',
       badgeLabel: 'Gateway',
       badgeVariant: 'neutral',
+      accentColor: '#64748B',
       title: 'Khởi động kiểm tra sức khỏe hạ tầng định kỳ',
       detail: 'PostgreSQL pgvector phản hồi 22ms, kết nối Supabase Cloud ổn định 100%.',
     },
@@ -223,7 +244,14 @@ export default function DashboardPage() {
           variant={refreshIntervalSec > 0 ? 'success' : 'neutral'}
         />
         {lastRefreshedAt && (
-          <Text type="supporting" style={{ fontSize: '12px' }}>
+          <Text
+            type="supporting"
+            style={{
+              fontSize: '12px',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#64748B',
+            }}
+          >
             {lastRefreshedAt}
           </Text>
         )}
@@ -296,6 +324,7 @@ export default function DashboardPage() {
             badgeLabel={health?.status === 'ok' ? 'ONLINE' : 'DEGRADED'}
             badgeVariant={health?.status === 'ok' ? 'success' : 'warning'}
             trendLabel="99.9% Sẵn sàng"
+            trendPositive={health?.status === 'ok'}
           />
         </StackItem>
 
@@ -309,6 +338,7 @@ export default function DashboardPage() {
             progress={100}
             progressVariant="success"
             trendLabel="Đã Đồng Bộ"
+            trendPositive={true}
           />
         </StackItem>
 
@@ -320,6 +350,7 @@ export default function DashboardPage() {
             badgeLabel="Google DeepMind"
             badgeVariant="blue"
             trendLabel="Thời gian thực"
+            trendPositive={true}
           />
         </StackItem>
       </HStack>
@@ -333,6 +364,7 @@ export default function DashboardPage() {
             badgeLabel="Chat CRM"
             badgeVariant="blue"
             trendLabel="+12% tuần này"
+            trendPositive={true}
           />
         </StackItem>
 
@@ -340,11 +372,13 @@ export default function DashboardPage() {
           <StatCard
             title="Khoảng Trống Tri Thức"
             value={`${pendingGapsCount} Chờ Xử Lý`}
-            subtitle={`Đã xử lý 3/5 câu hỏi ghi nhận (Tỷ lệ: 60%)`}
+            subtitle="Đã xử lý 3/5 câu hỏi ghi nhận (Tỷ lệ: 60%)"
             badgeLabel={pendingGapsCount > 0 ? 'CẦN CHÚ Ý' : 'ĐÃ HOÀN TẤT'}
             badgeVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
             progress={60}
             progressVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
+            trendLabel={pendingGapsCount > 0 ? 'Cần Triage' : 'Ổn định'}
+            trendPositive={pendingGapsCount === 0}
           />
         </StackItem>
 
@@ -358,14 +392,31 @@ export default function DashboardPage() {
             progress={100}
             progressVariant="success"
             trendLabel="Tuyệt đối"
+            trendPositive={true}
           />
         </StackItem>
       </HStack>
 
       {/* 3. Lối Tắt Tác Vụ Điều Hướng Nhanh */}
-      <Card padding={3}>
+      <Card
+        padding={3}
+        style={{
+          backgroundColor: '#131B2E',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '10px',
+        }}
+      >
         <HStack gap={3} vAlign="center" wrap="wrap">
-          <Text type="supporting" style={{ fontSize: '13px', fontWeight: 600 }}>
+          <Text
+            type="supporting"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: '#94A3B8',
+            }}
+          >
             Tác vụ Quản trị Thường dùng:
           </Text>
           <Button
@@ -405,13 +456,22 @@ export default function DashboardPage() {
       <HStack gap={4} wrap="wrap" vAlign="start">
         {/* Cột Trái: Bảng Danh Sách Endpoint Central API Gateway */}
         <StackItem size="fill" style={{ minWidth: '540px' }}>
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={3}>
               <HStack gap={2} vAlign="center">
-                <Heading level={3}>Central API Gateway Registry</Heading>
+                <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  Central API Gateway Registry
+                </Heading>
                 <Badge label="Port :3001" variant="teal" />
               </HStack>
-              <Text type="supporting" style={{ fontSize: '13px' }}>
+              <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
                 Danh sách các điểm cuối phục vụ bởi máy chủ HTTP Native với cơ chế xử lý ngắt kết nối SSE tự động.
               </Text>
               <Table data={endpointData} columns={columns} />
@@ -421,33 +481,67 @@ export default function DashboardPage() {
 
         {/* Cột Phải: Dòng Hoạt Động & Kiểm Toán Thời Gian Thực (CRM Live Activity Stream) */}
         <StackItem size="fill" style={{ minWidth: '380px' }}>
-          <Card padding={4}>
+          <Card
+            padding={4}
+            style={{
+              backgroundColor: '#131B2E',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+            }}
+          >
             <VStack gap={3}>
               <HStack gap={2} vAlign="center">
-                <Heading level={3}>Nhật Ký Tác Nghiệp Thời Gian Thực</Heading>
+                <Heading level={3} style={{ fontSize: '16px', fontWeight: 600, color: '#F8FAFC', margin: 0 }}>
+                  Nhật Ký Tác Nghiệp Thời Gian Thực
+                </Heading>
                 <Badge label="Live Stream" variant="blue" />
               </HStack>
-              <Text type="supporting" style={{ fontSize: '13px' }}>
+              <Text type="supporting" style={{ fontSize: '13px', color: '#94A3B8' }}>
                 Theo dõi luồng truy vấn, sự kiện kiểm toán hợp đồng và cảnh báo khoảng trống mới nhất.
               </Text>
 
               {/* Danh sách các sự kiện theo timeline */}
-              <VStack gap={3}>
+              <VStack gap={2}>
                 {recentActivities.map((act) => (
-                  <Card key={act.id} padding={3} style={{ borderLeft: '3px solid #3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.04)' }}>
+                  <Card
+                    key={act.id}
+                    padding={3}
+                    style={{
+                      borderLeft: `3px solid ${act.accentColor}`,
+                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      borderRadius: '8px',
+                    }}
+                  >
                     <VStack gap={1}>
                       <HStack gap={2} vAlign="center">
                         <Badge label={act.badgeLabel} variant={act.badgeVariant} />
                         <StackItem size="fill">
-                          <Text type="supporting" style={{ fontSize: '12px', textAlign: 'right' }}>
+                          <Text
+                            type="supporting"
+                            style={{
+                              fontSize: '11.5px',
+                              textAlign: 'right',
+                              color: '#64748B',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}
+                          >
                             {act.timestamp}
                           </Text>
                         </StackItem>
                       </HStack>
-                      <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+                      <Text
+                        type="body"
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '13px',
+                          color: '#F8FAFC',
+                          marginTop: '2px',
+                        }}
+                      >
                         {act.title}
                       </Text>
-                      <Text type="supporting" style={{ fontSize: '12px' }}>
+                      <Text type="supporting" style={{ fontSize: '12px', color: '#94A3B8', lineHeight: 1.4 }}>
                         {act.detail}
                       </Text>
                     </VStack>

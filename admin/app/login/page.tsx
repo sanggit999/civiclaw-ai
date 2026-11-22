@@ -46,12 +46,12 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại.');
+        setErrorMessage(data.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại tài khoản và mật khẩu.');
         setLoading(false);
         return;
       }
 
-      // Đăng nhập thành công -> Chuyển hướng
+      // Đăng nhập thành công -> Chuyển hướng tới trang dự định hoặc dashboard
       router.push(redirectTarget);
       router.refresh();
     } catch {
@@ -65,41 +65,59 @@ function LoginForm() {
       padding={4}
       style={{
         width: '100%',
-        maxWidth: '440px',
+        maxWidth: '420px',
         borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        backgroundColor: 'rgba(24, 24, 27, 0.85)',
-        backdropFilter: 'blur(16px)',
-        boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.5)',
+        border: '1px solid rgba(255, 255, 255, 0.09)',
+        backgroundColor: '#131B2E',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+        boxSizing: 'border-box',
       }}
     >
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
         <VStack gap={5}>
-          {/* Header & Logo */}
-          <VStack gap={1} hAlign="center" style={{ textAlign: 'center' }}>
+          {/* Header & Logo Thương Hiệu */}
+          <VStack gap={2} hAlign="center" style={{ textAlign: 'center', paddingTop: '4px' }}>
             <HStack gap={2} vAlign="center">
-              <Heading level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: '-0.02em' }}>
+              <Heading
+                level={2}
+                style={{
+                  margin: 0,
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  color: '#F8FAFC',
+                }}
+              >
                 CivicLaw AI
               </Heading>
-              <Badge label="Admin Portal" variant="blue" />
+              <Badge label="Portal" variant="blue" />
             </HStack>
-            <Text type="supporting" style={{ fontSize: '13px' }}>
-              Cổng Quản Trị Dữ Liệu Pháp Luật & Giám Sát Hạ Tầng
+            <Text
+              type="supporting"
+              style={{
+                fontSize: '12.5px',
+                color: '#94A3B8',
+                lineHeight: 1.4,
+              }}
+            >
+              Cổng Quản Trị Trung Tâm • CivicLaw Assistant
             </Text>
           </VStack>
 
-          <Divider />
+          <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-          {/* Thông báo lỗi nếu có */}
+          {/* Banner Thông Báo Lỗi */}
           {errorMessage && (
             <Banner
               status="error"
+              role="alert"
               title="Không thể đăng nhập"
               description={errorMessage}
             />
           )}
 
-          {/* Form Fields */}
+          {/* Form Fields với Astryx TextInput */}
           <VStack gap={4}>
             <TextInput
               type="email"
@@ -120,22 +138,42 @@ function LoginForm() {
             />
           </VStack>
 
-          {/* Submit Button */}
+          {/* Submit Button với Brand Deep Indigo #2563EB */}
           <Button
             type="submit"
             label={loading ? 'Đang xác thực...' : '🔒 Đăng Nhập Quản Trị'}
             variant="primary"
             isDisabled={loading}
             isLoading={loading}
-            style={{ width: '100%', paddingBlock: '10px', fontWeight: 600 }}
+            style={{
+              width: '100%',
+              paddingBlock: '10px',
+              fontWeight: 600,
+              fontSize: '13.5px',
+              backgroundColor: '#2563EB',
+              borderRadius: '8px',
+            }}
           />
 
-          {/* Chú thích an toàn */}
-          <VStack gap={1} hAlign="center" style={{ textAlign: 'center', marginTop: '4px' }}>
-            <Text type="supporting" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>
-              Phiên đăng nhập được mã hóa an toàn qua HTTP-Only Cookie.
+          {/* Footer An Ninh & Bản Quyền */}
+          <VStack gap={1} hAlign="center" style={{ textAlign: 'center', marginTop: '6px' }}>
+            <Text
+              type="supporting"
+              style={{
+                fontSize: '11px',
+                color: '#64748B',
+                lineHeight: 1.4,
+              }}
+            >
+              Mã hóa phiên chuẩn Enterprise qua HTTP-Only Cookie.
             </Text>
-            <Text type="supporting" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>
+            <Text
+              type="supporting"
+              style={{
+                fontSize: '11px',
+                color: '#475569',
+              }}
+            >
               CivicLaw AI • Grounded Legal Assistant System
             </Text>
           </VStack>
@@ -154,12 +192,16 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
-        background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 50%, #020617 100%)',
+        padding: '24px',
+        backgroundColor: '#090D16',
+        backgroundImage: `
+          radial-gradient(circle at 50% 15%, rgba(37, 99, 235, 0.15) 0%, transparent 60%),
+          radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%)
+        `,
         boxSizing: 'border-box',
       }}
     >
-      <Suspense fallback={<div>Đang tải giao diện đăng nhập...</div>}>
+      <Suspense fallback={<div style={{ color: '#94A3B8', fontSize: '13px' }}>Đang nạp giao diện quản trị...</div>}>
         <LoginForm />
       </Suspense>
     </div>

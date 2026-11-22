@@ -71,7 +71,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   if (pathname === '/login') {
     return (
       <Theme theme={themes[defaultThemeSlug]}>
-        <Section padding={0} style={{ minHeight: '100vh', width: '100%' }}>
+        <Section padding={0} style={{ minHeight: '100vh', width: '100%', backgroundColor: '#090D16' }}>
           {children}
         </Section>
       </Theme>
