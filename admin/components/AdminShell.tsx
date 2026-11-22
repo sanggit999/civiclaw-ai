@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Theme,
@@ -85,11 +86,34 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <TopNav
       label="CivicLaw Application Navigation"
       startContent={
-        <Breadcrumbs variant="supporting">
-          <BreadcrumbItem href="/">CivicLaw AI</BreadcrumbItem>
-          <BreadcrumbItem>{currentRoute.group}</BreadcrumbItem>
-          <BreadcrumbItem isCurrent>{currentRoute.name}</BreadcrumbItem>
-        </Breadcrumbs>
+        <HStack gap={3} vAlign="center">
+          {/* Logo, Thương hiệu & Cổng Quản Trị Nội Bộ đẩy lên Header */}
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <HStack gap={2} vAlign="center" style={{ cursor: 'pointer', paddingRight: '4px' }}>
+              <span style={{ fontSize: '18px', lineHeight: 1 }}>🏛️</span>
+              <VStack gap={0}>
+                <HStack gap={1.5} vAlign="center">
+                  <Text type="body" style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '-0.02em', color: '#F8FAFC', lineHeight: 1.2 }}>
+                    CivicLaw AI
+                  </Text>
+                  <Badge label="v1.0" variant="blue" />
+                </HStack>
+                <Text type="supporting" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', fontWeight: 600, lineHeight: 1.2 }}>
+                  CỔNG QUẢN TRỊ NỘI BỘ
+                </Text>
+              </VStack>
+            </HStack>
+          </Link>
+
+          {/* Divider ngăn cách thương hiệu và Breadcrumbs */}
+          <Divider orientation="vertical" style={{ height: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)' }} />
+
+          {/* Breadcrumbs dẫn hướng */}
+          <Breadcrumbs variant="supporting">
+            <BreadcrumbItem href="/">{currentRoute.group}</BreadcrumbItem>
+            <BreadcrumbItem isCurrent>{currentRoute.name}</BreadcrumbItem>
+          </Breadcrumbs>
+        </HStack>
       }
       centerContent={<GlobalSearchInput />}
       endContent={
@@ -138,17 +162,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     />
   );
 
-  // SideNav tinh gọn: Không trùng lặp branding với TopNav, nhãn không bị cắt chữ (Anti-Truncation)
+  // SideNav tinh gọn: Bắt đầu ngay với các phân nhóm chuyên môn
   const sideNav = (
     <SideNav
-      header={
-        <SideNavHeading
-          heading="CivicLaw AI"
-          superheading="CỔNG QUẢN TRỊ NỘI BỘ"
-          headingHref="/"
-          headerEndContent={<Badge label="v1.0" variant="blue" />}
-        />
-      }
       footer={
         <Section padding={3} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
           <Text type="supporting" style={{ fontSize: '11px', textAlign: 'center', display: 'block' }}>

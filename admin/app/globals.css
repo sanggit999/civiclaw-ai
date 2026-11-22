@@ -117,3 +117,39 @@ div[class*="Card"]:hover {
   background-color: rgba(37, 99, 235, 0.4);
   color: #FFFFFF;
 }
+
+/* Astryx AppShell, TopNav, SideNav Enterprise Dark Theme */
+nav,
+aside,
+header,
+[data-top-nav],
+[data-side-nav],
+div[class*="TopNav"],
+div[class*="SideNav"],
+div[class*="AppShell"] {
+  background-color: #0B0F19 !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+div[class*="SideNavItem"],
+button[class*="SideNavItem"],
+a[class*="SideNavItem"] {
+  color: #94A3B8 !important;
+  transition: all 0.15s ease-in-out;
+}
+
+div[class*="SideNavItem"]:hover,
+button[class*="SideNavItem"]:hover,
+a[class*="SideNavItem"]:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+}
+
+[aria-current="page"],
+[data-selected="true"],
+.is-selected {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  color: #60A5FA !important;
+}
+
