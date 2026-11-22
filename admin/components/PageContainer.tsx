@@ -37,20 +37,20 @@ export function PageContainer({
       style={{
         maxInlineSize: maxWidth,
         marginInline: 'auto',
-        paddingBlock: '28px',
+        paddingBlock: '20px',
         paddingInline: '32px',
         boxSizing: 'border-box',
         width: '100%',
       }}
     >
-      <VStack gap={6}>
+      <VStack gap={4}>
         {/* Header Trang Thống Nhất */}
         <HStack gap={4} vAlign="center" wrap="wrap">
           <StackItem size="fill">
             <VStack gap={1}>
-              <Heading level={1}>{title}</Heading>
+              <Heading level={2}>{title}</Heading>
               {description && (
-                <Text type="supporting">{description}</Text>
+                <Text type="supporting" style={{ fontSize: '13px' }}>{description}</Text>
               )}
             </VStack>
           </StackItem>

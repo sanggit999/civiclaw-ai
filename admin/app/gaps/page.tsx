@@ -14,6 +14,9 @@ import {
   TextInput,
   Drawer,
   DrawerHeader,
+  TabList,
+  Tab,
+  EmptyState,
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
@@ -230,31 +233,64 @@ export default function KnowledgeGapsPage() {
       </HStack>
 
       {/* Tabs lọc trạng thái theo chuẩn CRM Queue */}
-      <HStack gap={2} wrap="wrap" role="tablist" aria-label="Lọc theo trạng thái câu hỏi">
-        {statusTabs.map((tab) => {
-          const isSelected = filterStatus === tab.id;
-          return (
-            <Button
-              key={tab.id}
-              label={`${tab.label} (${tab.count})`}
-              variant={isSelected ? 'primary' : 'ghost'}
-              size="sm"
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => setFilterStatus(tab.id)}
+      <TabList
+        value={filterStatus}
+        onChange={(val) => setFilterStatus(val as FilterStatus)}
+        hasDivider
+      >
+        <Tab
+          value="all"
+          label="Tất cả câu hỏi"
+          endContent={<Badge label={String(items.length)} variant="neutral" />}
+        />
+        <Tab
+          value="unreviewed"
+          label="Chờ xử lý"
+          endContent={
+            <Badge
+              label={String(unreviewedCount)}
+              variant={unreviewedCount > 0 ? 'warning' : 'neutral'}
             />
-          );
-        })}
-      </HStack>
+          }
+        />
+        <Tab
+          value="resolved"
+          label="Đã giải quyết"
+          endContent={<Badge label={String(resolvedCount)} variant="neutral" />}
+        />
+        <Tab
+          value="ignored"
+          label="Đã bỏ qua"
+          endContent={<Badge label={String(ignoredCount)} variant="neutral" />}
+        />
+      </TabList>
 
-      {/* Bảng danh sách câu hỏi */}
+      {/* Bảng danh sách câu hỏi kèm EmptyState */}
       <Card padding={4}>
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
             <Heading level={3}>Danh Sách Khoảng Trống Cần Xử Lý</Heading>
             <Badge label={`${filteredItems.length} câu hỏi`} variant="teal" />
           </HStack>
-          <Table data={tableData} columns={columns} />
+          {filteredItems.length > 0 ? (
+            <Table data={tableData} columns={columns} />
+          ) : (
+            <EmptyState
+              title={
+                filterStatus === 'ignored'
+                  ? 'Không có câu hỏi nào bị bỏ qua'
+                  : filterStatus === 'resolved'
+                  ? 'Chưa có câu hỏi nào được đánh dấu giải quyết'
+                  : 'Hàng đợi đang hoàn toàn sạch sẽ'
+              }
+              description={
+                filterStatus === 'ignored'
+                  ? 'Toàn bộ các truy vấn chưa đối soát từ công dân đều đang được theo dõi và xử lý tích cực.'
+                  : 'Các câu hỏi cần bổ sung tri thức sẽ tự động xuất hiện tại đây khi độ tin cậy trích dẫn dưới ngưỡng quy định.'
+              }
+              isCompact
+            />
+          )}
         </VStack>
       </Card>
 

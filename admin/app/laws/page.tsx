@@ -16,6 +16,9 @@ import {
   Drawer,
   DrawerHeader,
   ProgressBar,
+  TabList,
+  Tab,
+  EmptyState,
   StackItem,
 } from '@astryxdesign/core';
 import { searchLaws, LegalSearchResultItem } from '@/lib/api-client';
@@ -177,23 +180,20 @@ export default function LawsBrowserPage() {
       title="Tra Cứu Kho Dữ Liệu Luật (4.715 Chunks)"
       description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector với độ trễ thấp."
     >
-      {/* Bộ lọc lĩnh vực nhanh dạng Tabs chuẩn CRM */}
-      <HStack gap={2} wrap="wrap" role="tablist" aria-label="Bộ lọc lĩnh vực pháp luật">
-        {domainTabs.map((tab) => {
-          const isSelected = domain === tab.value;
-          return (
-            <Button
-              key={tab.value}
-              label={tab.label}
-              variant={isSelected ? 'primary' : 'ghost'}
-              size="sm"
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => handleSelectTab(tab.value)}
-            />
-          );
-        })}
-      </HStack>
+      {/* Bộ lọc lĩnh vực dạng Tabs chuẩn Astryx */}
+      <TabList
+        value={domain}
+        onChange={handleSelectTab}
+        hasDivider
+      >
+        {domainTabs.map((tab) => (
+          <Tab
+            key={tab.value}
+            value={tab.value}
+            label={tab.label}
+          />
+        ))}
+      </TabList>
 
       {/* Thanh tìm kiếm toàn diện (Omni-search Bar) */}
       <Card padding={4}>
@@ -242,7 +242,15 @@ export default function LawsBrowserPage() {
             <Heading level={3}>Danh Sách Điều Khoản & Căn Cứ Pháp Lý</Heading>
             <Badge label={`${results.length} hiển thị`} variant="teal" />
           </HStack>
-          <Table data={tableData} columns={columns} />
+          {results.length > 0 ? (
+            <Table data={tableData} columns={columns} />
+          ) : (
+            <EmptyState
+              title="Không tìm thấy điều khoản phù hợp"
+              description="Thử thay đổi từ khóa tra cứu hoặc chọn 'Tất cả 5 Bộ Luật' để mở rộng phạm vi đối soát."
+              isCompact
+            />
+          )}
         </VStack>
       </Card>
 

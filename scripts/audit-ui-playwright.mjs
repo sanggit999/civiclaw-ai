@@ -57,6 +57,15 @@ async function runAudit() {
     await page.waitForTimeout(1000);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03-gaps-list.png'), fullPage: true });
 
+    // 3b. Kiểm tra EmptyState khi chọn Tab "Đã bỏ qua"
+    console.log('📸 3b. Kiểm tra EmptyState của Tab Đã bỏ qua...');
+    const ignoredTab = page.locator('button:has-text("Đã bỏ qua")').first();
+    if (await ignoredTab.count() > 0) {
+      await ignoredTab.click();
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03-gaps-empty-state.png'), fullPage: true });
+    }
+
     // 4. Chat Sessions & Grounded Audit
     console.log('📸 4. Chụp ảnh Kiểm Toán Phiên AI (/sessions)...');
     await page.goto('http://localhost:3000/sessions', { waitUntil: 'domcontentloaded', timeout: 15000 });
