@@ -285,7 +285,7 @@ export default function LawsBrowserPage() {
               <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
                 NỘI DUNG PHÁP LÝ TOÀN VĂN:
               </Text>
-              <Card padding={3} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Card padding={3} style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <Text type="body" style={{ lineHeight: '1.7', whiteSpace: 'pre-line', fontSize: '13.5px' }}>
                   {selectedLaw.content}
                 </Text>

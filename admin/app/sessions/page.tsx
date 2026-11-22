@@ -237,8 +237,8 @@ export default function SessionsAuditPage() {
                       padding={3}
                       style={{
                         borderLeft: isUser ? '4px solid #3b82f6' : '4px solid #10b981',
-                        backgroundColor: isUser ? '#f8fafc' : '#f0fdf4',
-                        border: '1px solid #e2e8f0',
+                        backgroundColor: isUser ? 'rgba(59, 130, 246, 0.06)' : 'rgba(16, 185, 129, 0.06)',
+                        border: isUser ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
                       }}
                     >
                       <VStack gap={2}>

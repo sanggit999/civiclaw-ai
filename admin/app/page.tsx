@@ -434,7 +434,7 @@ export default function DashboardPage() {
               {/* Danh sách các sự kiện theo timeline */}
               <VStack gap={3}>
                 {recentActivities.map((act) => (
-                  <Card key={act.id} padding={3} style={{ borderLeft: '3px solid #3b82f6', backgroundColor: '#fcfcfd' }}>
+                  <Card key={act.id} padding={3} style={{ borderLeft: '3px solid #3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.04)' }}>
                     <VStack gap={1}>
                       <HStack gap={2} vAlign="center">
                         <Badge label={act.badgeLabel} variant={act.badgeVariant} />

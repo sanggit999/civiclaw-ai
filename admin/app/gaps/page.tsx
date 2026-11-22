@@ -286,7 +286,7 @@ export default function KnowledgeGapsPage() {
               <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
                 CÂU HỎI TỪ CÔNG DÂN:
               </Text>
-              <Card padding={3} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Card padding={3} style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <Text type="body" style={{ fontWeight: 600, fontSize: '14px' }}>
                   &quot;{targetItem.query_text}&quot;
                 </Text>

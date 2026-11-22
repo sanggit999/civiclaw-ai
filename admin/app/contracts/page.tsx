@@ -155,7 +155,8 @@ export default function ContractPlaygroundPage() {
               lineHeight: '1.6',
               boxSizing: 'border-box',
               resize: 'vertical',
-              backgroundColor: '#fafafa',
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+              color: 'inherit',
             }}
             placeholder="Dán toàn văn nội dung hợp đồng cá nhân vào đây..."
           />
@@ -259,8 +260,8 @@ export default function ContractPlaygroundPage() {
                       padding={3}
                       style={{
                         borderLeft: isRed ? '4px solid #ef4444' : '4px solid #f59e0b',
-                        backgroundColor: isRed ? '#fef2f2' : '#fffbeb',
-                        border: '1px solid #fecaca',
+                        backgroundColor: isRed ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                        border: isRed ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
                       }}
                     >
                       <VStack gap={2}>
