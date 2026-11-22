@@ -216,15 +216,17 @@ export default function ContractPlaygroundPage() {
           <HStack gap={3} wrap="wrap">
             <StackItem size="fill">
               <StatCard
+                icon="⚖️"
                 title="Mức Độ Rủi Ro Tổng Thể"
                 value={
                   report.overallRisk === 'RED'
                     ? 'RỦI RO CAO'
                     : report.overallRisk === 'YELLOW'
                     ? 'CẦN ĐIỀU CHỈNH'
-                    : 'AN TOÀN PHÁP LÝ'
+                    : 'AN TOÀN'
                 }
-                subtitle={`Chỉ số rủi ro: ${report.riskScore}/100`}
+                unit={`(${report.riskScore}/100)`}
+                subtitle="Chỉ số rủi ro tổng hợp dựa trên 5 bộ luật"
                 badgeLabel={report.overallRisk}
                 badgeVariant={
                   report.overallRisk === 'RED'
@@ -242,20 +244,26 @@ export default function ContractPlaygroundPage() {
 
             <StackItem size="fill">
               <StatCard
-                title="Số Điều Khoản Bất Thường"
-                value={`${report.findings.length} Điều Khoản`}
-                subtitle="Cần yêu cầu bên cho thuê/sử dụng lao động sửa đổi"
+                icon="🚨"
+                title="Điều Khoản Bất Thường"
+                value={report.findings.length}
+                unit="điều khoản"
+                subtitle="Cần yêu cầu bên đối tác sửa đổi"
                 badgeLabel="BẪY PHÁP LÝ"
                 badgeVariant="teal"
                 trendLabel="Cần đàm phán"
                 trendPositive={false}
+                progress={Math.min(100, report.findings.length * 25)}
+                progressVariant="warning"
               />
             </StackItem>
 
             <StackItem size="fill">
               <StatCard
+                icon="📚"
                 title="Căn Cứ Pháp Luật Đối Soát"
-                value="5 Bộ Luật"
+                value="5"
+                unit="bộ luật"
                 subtitle="Dân sự, Lao động, Nhà ở, BHXH, Giao thông"
                 badgeLabel="ĐÃ ĐỐI SOÁT"
                 badgeVariant="success"

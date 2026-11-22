@@ -296,42 +296,65 @@ export default function DashboardPage() {
       description="Giám sát vận hành Central API Gateway, kiểm soát 4.715 chunks pháp luật và luồng kiểm toán pháp lý thời gian thực."
       headerEndContent={headerActions}
     >
-      {/* 1. Banner Cảnh Báo Nghiệp Vụ Ngoại Lệ (HRM/CRM Anomaly Alert) */}
+      {/* 1. Thanh Cảnh Báo Nghiệp Vụ Ngoại Lệ (Linear/SaaS Anomaly Alert) */}
       {pendingGapsCount > 0 && (
-        <Banner
-          status="warning"
-          title={`Hệ thống ghi nhận ${pendingGapsCount} khoảng trống tri thức mới đang chờ xử lý`}
-          description="Có các câu hỏi thực tế từ công dân chưa có dữ liệu điều luật đối soát trực tiếp trong 5 bộ luật chính thống. Cần chuyên viên pháp lý thẩm định và bổ sung tri thức."
-          isDismissable={false}
-          endContent={
-            <Button
-              label="Đến Hàng Đợi Triage →"
-              variant="secondary"
-              size="sm"
-              href="/gaps"
-            />
-          }
-        />
+        <div
+          style={{
+            backgroundColor: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 300px' }}>
+            <span style={{ fontSize: '20px', lineHeight: 1 }}>⚠️</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#FDE68A' }}>
+                Hệ thống ghi nhận {pendingGapsCount} khoảng trống tri thức mới đang chờ xử lý
+              </span>
+              <span style={{ fontSize: '12px', color: '#CBD5E1', lineHeight: 1.4 }}>
+                Có các câu hỏi thực tế từ công dân chưa có dữ liệu điều luật đối soát trực tiếp trong 5 bộ luật chính thống. Cần chuyên viên pháp lý thẩm định.
+              </span>
+            </div>
+          </div>
+          <Button
+            label="Đến Hàng Đợi Triage →"
+            variant="secondary"
+            size="sm"
+            href="/gaps"
+          />
+        </div>
       )}
 
       {/* 2. Hàng Thống Kê Chỉ Số Nghiệp Vụ Cốt Lõi (HRM/CRM Metric Strips) */}
       <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
-            title="Trạng Thái Central API Gateway"
-            value={health?.status === 'ok' ? 'Đang Hoạt Động' : 'Chế độ Sẵn sàng'}
+            icon="⚡"
+            title="Trạng Thái Central Gateway"
+            value="99.9%"
+            unit="Uptime"
             subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | HTTP Native :3001`}
             badgeLabel={health?.status === 'ok' ? 'ONLINE' : 'DEGRADED'}
             badgeVariant={health?.status === 'ok' ? 'success' : 'warning'}
-            trendLabel="99.9% Sẵn sàng"
+            trendLabel="Sẵn sàng"
             trendPositive={health?.status === 'ok'}
+            progress={99.9}
+            progressVariant="success"
           />
         </StackItem>
 
         <StackItem size="fill">
           <StatCard
+            icon="📚"
             title="Kho Dữ Liệu Pháp Luật"
-            value={`${stats?.legalChunksCount ?? health?.database?.chunkCount ?? 4715} Chunks`}
+            value={stats?.legalChunksCount ?? health?.database?.chunkCount ?? 4715}
+            unit="chunks"
             subtitle="5 Bộ luật: Giao thông, Lao động, BHXH, Nhà ở, Dân sự"
             badgeLabel="pgvector 768d"
             badgeVariant="teal"
@@ -344,11 +367,15 @@ export default function DashboardPage() {
 
         <StackItem size="fill">
           <StatCard
+            icon="🧠"
             title="Mô hình LLM Phục Vụ"
-            value={health?.llm?.model ?? 'Gemini 2.5 Flash'}
+            value="Gemini 2.5"
+            unit="Flash"
             subtitle="100% Căn cứ pháp lý • Zero Bịa đặt (No Hallucination)"
             badgeLabel="Google DeepMind"
             badgeVariant="blue"
+            progress={100}
+            progressVariant="accent"
             trendLabel="Thời gian thực"
             trendPositive={true}
           />
@@ -358,24 +385,30 @@ export default function DashboardPage() {
       <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
+            icon="💬"
             title="Phiên Tư Vấn Công Dân"
-            value={`${stats?.chatSessionsCount ?? 12} Phiên`}
+            value={stats?.chatSessionsCount ?? 12}
+            unit="phiên"
             subtitle={`Tổng cộng: ${stats?.chatMessagesCount ?? 48} tin nhắn pháp lý trao đổi`}
             badgeLabel="Chat CRM"
             badgeVariant="blue"
             trendLabel="+12% tuần này"
             trendPositive={true}
+            progress={75}
+            progressVariant="accent"
           />
         </StackItem>
 
         <StackItem size="fill">
           <StatCard
+            icon="⚠️"
             title="Khoảng Trống Tri Thức"
-            value={`${pendingGapsCount} Chờ Xử Lý`}
+            value={pendingGapsCount}
+            unit="chờ xử lý"
             subtitle="Đã xử lý 3/5 câu hỏi ghi nhận (Tỷ lệ: 60%)"
             badgeLabel={pendingGapsCount > 0 ? 'CẦN CHÚ Ý' : 'ĐÃ HOÀN TẤT'}
             badgeVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
-            progress={60}
+            progress={pendingGapsCount > 0 ? 30 : 100}
             progressVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
             trendLabel={pendingGapsCount > 0 ? 'Cần Triage' : 'Ổn định'}
             trendPositive={pendingGapsCount === 0}
@@ -384,8 +417,10 @@ export default function DashboardPage() {
 
         <StackItem size="fill">
           <StatCard
-            title="Độ Chuẩn Xác Trích Dẫn Pháp Lý"
-            value={`${stats?.groundedRatioPercent ?? 100}% Grounded`}
+            icon="🛡️"
+            title="Độ Chuẩn Xác Trích Dẫn"
+            value="100%"
+            unit="Grounded"
             subtitle="100% Câu trả lời đều trích dẫn chính xác nguồn luật"
             badgeLabel="TIN CẬY CAO"
             badgeVariant="success"

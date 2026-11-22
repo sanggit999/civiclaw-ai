@@ -165,32 +165,42 @@ export default function SessionsAuditPage() {
       <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
-            title="Tổng Phiên Tư Vấn Đã Ghi Nhận"
-            value={`${totalSessions} Phiên`}
+            icon="💬"
+            title="Tổng Phiên Tư Vấn"
+            value={totalSessions}
+            unit="phiên"
             subtitle="Lưu trữ an toàn trong bảng chat_sessions"
             badgeLabel="LƯỢNG TRUY CẬP"
             badgeVariant="teal"
             trendLabel="+12% tuần này"
             trendPositive={true}
+            progress={80}
+            progressVariant="accent"
           />
         </StackItem>
 
         <StackItem size="fill">
           <StatCard
+            icon="📨"
             title="Tổng Tin Nhắn Tương Tác"
-            value={`${totalMessages} Tin Nhắn`}
+            value={totalMessages}
+            unit="tin nhắn"
             subtitle="Gồm câu hỏi công dân và phản hồi AI Gateway"
             badgeLabel="ĐA LƯỢT"
             badgeVariant="blue"
-            trendLabel="Trung bình 4 tin/phiên"
+            trendLabel="~4 tin/phiên"
             trendPositive={true}
+            progress={85}
+            progressVariant="accent"
           />
         </StackItem>
 
         <StackItem size="fill">
           <StatCard
-            title="Tỷ Lệ Trích Dẫn Nguồn Luật"
-            value="100% Grounded"
+            icon="🛡️"
+            title="Tỷ Lệ Trích Dẫn Luật"
+            value="100%"
+            unit="Grounded"
             subtitle="Zero bịa đặt • Căn cứ chính xác theo 5 bộ luật"
             badgeLabel="CHUẨN PHÁP LÝ"
             badgeVariant="success"

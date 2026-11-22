@@ -198,20 +198,26 @@ export default function KnowledgeGapsPage() {
       <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
+            icon="⚠️"
             title="Câu Hỏi Chờ Thẩm Định"
-            value={`${unreviewedCount} Câu hỏi`}
+            value={unreviewedCount}
+            unit="câu hỏi"
             subtitle="Cần rà soát và bổ sung văn bản hướng dẫn"
             badgeLabel={unreviewedCount > 0 ? 'CẦN CHÚ Ý' : 'HOÀN HẢO'}
             badgeVariant={unreviewedCount > 0 ? 'warning' : 'success'}
             trendLabel={unreviewedCount > 0 ? 'Ưu tiên cao' : 'Sạch sẽ'}
             trendPositive={unreviewedCount === 0}
+            progress={unreviewedCount > 0 ? 35 : 100}
+            progressVariant={unreviewedCount > 0 ? 'warning' : 'success'}
           />
         </StackItem>
 
         <StackItem size="fill">
           <StatCard
+            icon="✓"
             title="Đã Giải Quyết Tri Thức"
-            value={`${resolvedCount} Câu hỏi`}
+            value={resolvedCount}
+            unit="câu hỏi"
             subtitle="Đã nạp bổ sung chunks vào pgvector"
             badgeLabel="ĐÃ BỔ SUNG"
             badgeVariant="success"
@@ -224,13 +230,17 @@ export default function KnowledgeGapsPage() {
 
         <StackItem size="fill">
           <StatCard
+            icon="🔍"
             title="Tổng Lượt Nhu Cầu Tìm Kiếm"
-            value={`${totalHits} Lượt`}
+            value={totalHits}
+            unit="lượt"
             subtitle="Tần suất công dân hỏi về các khoảng trống"
             badgeLabel="PHÂN TÍCH NHU CẦU"
             badgeVariant="blue"
             trendLabel="Thời gian thực"
             trendPositive={true}
+            progress={100}
+            progressVariant="accent"
           />
         </StackItem>
       </HStack>

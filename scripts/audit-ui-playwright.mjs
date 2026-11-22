@@ -20,7 +20,7 @@ import fs from 'fs';
 import path from 'path';
 
 const BASE_URL = process.env.ADMIN_BASE_URL || 'http://localhost:3000';
-const SCREENSHOT_DIR = 'C:/Users/sangdev/.gemini/antigravity/brain/71f6d67b-693f-46dd-8766-7b7e54372926/screenshots';
+const SCREENSHOT_DIR = 'C:/Users/sangdev/.gemini/antigravity/brain/f59b6444-8b0f-4871-8704-9cf2602e2d70/screenshots';
 
 const DEFAULT_EMAIL = process.env.ADMIN_DEFAULT_EMAIL || 'admin@civiclaw.vn';
 const DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'CivicLaw@2026';
