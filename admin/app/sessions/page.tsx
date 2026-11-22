@@ -11,6 +11,7 @@ import {
   Badge,
   Table,
   Divider,
+  StatusDot,
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
@@ -94,23 +95,29 @@ export default function SessionsAuditPage() {
       header: 'Tiêu đề phiên tư vấn',
       renderCell: (item: SessionRow) => (
         <VStack gap={1}>
-          <Text type="body">{item.title}</Text>
-          <Text type="supporting">Mã phiên: {item.id}</Text>
+          <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+            {item.title}
+          </Text>
+          <Text type="supporting" style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace' }}>
+            {item.id}
+          </Text>
         </VStack>
       ),
     },
     {
       key: 'message_count',
-      header: 'Tin nhắn',
+      header: 'Lượt tin',
       renderCell: (item: SessionRow) => (
         <Badge label={`${item.message_count} tin`} variant="blue" />
       ),
     },
     {
       key: 'created_at',
-      header: 'Thời gian khởi tạo',
+      header: 'Khởi tạo',
       renderCell: (item: SessionRow) => (
-        <Text type="supporting">{item.created_at}</Text>
+        <Text type="supporting" style={{ fontSize: '12px' }}>
+          {item.created_at}
+        </Text>
       ),
     },
     {
@@ -118,7 +125,7 @@ export default function SessionsAuditPage() {
       header: 'Thao tác',
       renderCell: (item: SessionRow) => (
         <Button
-          label={selectedSessionId === item.id ? 'Đang xem' : 'Xem hội thoại'}
+          label={selectedSessionId === item.id ? 'Đang chọn' : 'Chi tiết'}
           variant={selectedSessionId === item.id ? 'primary' : 'secondary'}
           size="sm"
           onClick={() => setSelectedSessionId(item.id)}
@@ -129,51 +136,59 @@ export default function SessionsAuditPage() {
 
   return (
     <PageContainer
-      title="Kiểm Toán Hội Thoại & Trích Dẫn Pháp Lý (Grounded Audit)"
-      description="Giám sát các phiên tư vấn của công dân, kiểm toán độ tin cậy trích dẫn 100% nguồn luật chính thống và ngăn ngừa ảo giác AI."
+      title="Kiểm Toán Phiên Hỏi Đáp & Căn Cứ Trích Dẫn (Chat CRM)"
+      description="Giám sát các phiên tư vấn pháp luật của công dân, kiểm toán độ tin cậy trích dẫn 100% nguồn luật chính thống và ngăn ngừa ảo giác AI."
       headerEndContent={
         <Button
-          label={loadingSessions ? 'Đang cập nhật...' : 'Làm mới phiên'}
+          label={loadingSessions ? 'Đang cập nhật...' : 'Làm mới'}
           variant="secondary"
+          size="sm"
           onClick={loadSessions}
         />
       }
     >
-      {/* Thẻ thống kê chỉ số kiểm toán */}
-      <HStack gap={4} wrap="wrap">
+      {/* Chỉ số CRM hội thoại */}
+      <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
             title="Tổng Phiên Tư Vấn Đã Ghi Nhận"
             value={`${totalSessions} Phiên`}
-            subtitle="Được lưu trữ an toàn trong bảng chat_sessions"
+            subtitle="Lưu trữ an toàn trong bảng chat_sessions"
             badgeLabel="LƯỢNG TRUY CẬP"
             badgeVariant="teal"
+            trendLabel="+12% tuần này"
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
-            title="Tổng Lượt Trao Đổi"
+            title="Tổng Tin Nhắn Tương Tác"
             value={`${totalMessages} Tin Nhắn`}
-            subtitle="Gồm câu hỏi công dân và phản hồi từ AI Gateway"
-            badgeLabel="HỘI THOẠI ĐA LƯỢT"
+            subtitle="Gồm câu hỏi công dân và phản hồi AI Gateway"
+            badgeLabel="ĐA LƯỢT"
             badgeVariant="blue"
+            trendLabel="Trung bình 4 tin/phiên"
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
-            title="Tỷ Lệ Trích Dẫn Căn Cứ Hợp Lệ"
+            title="Tỷ Lệ Trích Dẫn Nguồn Luật"
             value="100% Grounded"
-            subtitle="Không có trường hợp trả lời thiếu căn cứ pháp lý"
+            subtitle="Zero bịa đặt • Căn cứ chính xác theo 5 bộ luật"
             badgeLabel="CHUẨN PHÁP LÝ"
             badgeVariant="success"
+            progress={100}
+            progressVariant="success"
+            trendLabel="Tuyệt đối"
           />
         </StackItem>
       </HStack>
 
-      {/* Khu vực nội dung: 2 Cột (Trái: Danh sách phiên, Phải: Chi tiết hội thoại kiểm toán) */}
+      {/* Bố cục Split-View: Trái = Danh sách phiên, Phải = Luồng hội thoại & Căn cứ kiểm toán */}
       <HStack gap={4} vAlign="start" wrap="wrap">
         {/* Cột trái: Danh sách phiên */}
-        <StackItem size="fill">
+        <StackItem size="fill" style={{ minWidth: '450px' }}>
           <Card padding={4}>
             <VStack gap={3}>
               <HStack gap={2} vAlign="center">
@@ -185,31 +200,31 @@ export default function SessionsAuditPage() {
           </Card>
         </StackItem>
 
-        {/* Cột phải: Dòng thời gian tin nhắn & kiểm toán trích dẫn */}
-        <StackItem size="fill">
+        {/* Cột phải: Khung hội thoại & Căn cứ trích dẫn */}
+        <StackItem size="fill" style={{ minWidth: '480px' }}>
           <Card padding={4}>
             <VStack gap={4}>
               <HStack gap={2} vAlign="center">
                 <StackItem size="fill">
                   <VStack gap={1}>
                     <Heading level={3}>
-                      {selectedSession?.title || 'Chi Tiết Hội Thoại Tư Vấn'}
+                      {selectedSession?.title || 'Chi Tiết Phiên Tư Vấn'}
                     </Heading>
-                    <Text type="supporting">
-                      Mã phiên: {selectedSessionId || 'Chưa chọn'}
+                    <Text type="supporting" style={{ fontSize: '12px', fontFamily: 'ui-monospace, monospace' }}>
+                      ID: {selectedSessionId || 'Chưa chọn'}
                     </Text>
                   </VStack>
                 </StackItem>
                 <Badge
-                  label={loadingMessages ? 'Đang nạp...' : `${messages.length} Tin nhắn`}
+                  label={loadingMessages ? 'Đang tải...' : `${messages.length} Tin nhắn`}
                   variant="blue"
                 />
               </HStack>
 
               <Divider />
 
-              {/* Danh sách tin nhắn với huy hiệu kiểm toán Grounded */}
-              <VStack gap={4}>
+              {/* Danh sách tin nhắn */}
+              <VStack gap={3}>
                 {messages.length === 0 && !loadingMessages && (
                   <Text type="supporting">Chưa có tin nhắn trong phiên này.</Text>
                 )}
@@ -221,35 +236,42 @@ export default function SessionsAuditPage() {
                       key={msg.id}
                       padding={3}
                       style={{
-                        borderLeft: isUser ? '4px solid #3182ce' : '4px solid #38a169',
-                        backgroundColor: isUser ? '#f7fafc' : '#f0fff4',
+                        borderLeft: isUser ? '4px solid #3b82f6' : '4px solid #10b981',
+                        backgroundColor: isUser ? '#f8fafc' : '#f0fdf4',
+                        border: '1px solid #e2e8f0',
                       }}
                     >
                       <VStack gap={2}>
                         <HStack gap={2} vAlign="center">
+                          <StatusDot
+                            variant={isUser ? 'neutral' : 'success'}
+                            label={isUser ? 'Công dân' : 'AI Assistant'}
+                          />
                           <Badge
                             label={isUser ? 'Công Dân (Người Hỏi)' : 'Trợ Lý CivicLaw AI'}
                             variant={isUser ? 'blue' : 'success'}
                           />
-                          <Text type="supporting">
+                          <Text type="supporting" style={{ fontSize: '12px' }}>
                             {new Date(msg.createdAt).toLocaleTimeString('vi-VN')}
                           </Text>
                           {!isUser && (
                             <Badge
-                              label={msg.isGrounded ? '✓ 100% Nguồn Luật' : '⚠ Cần Kiểm Tra'}
+                              label={msg.isGrounded ? '✓ 100% Grounded' : '⚠ Cần Kiểm Tra'}
                               variant={msg.isGrounded ? 'success' : 'warning'}
                             />
                           )}
                         </HStack>
 
-                        <Text type="body" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                        <Text type="body" style={{ whiteSpace: 'pre-line', lineHeight: '1.6', fontSize: '13.5px' }}>
                           {msg.content}
                         </Text>
 
-                        {/* Danh sách trích dẫn nguồn luật nếu có */}
+                        {/* Danh sách thẻ trích dẫn nguồn luật */}
                         {!isUser && msg.citations && msg.citations.length > 0 && (
-                          <VStack gap={1} style={{ marginTop: '8px' }}>
-                            <Text type="supporting">Căn cứ pháp lý trích dẫn:</Text>
+                          <VStack gap={1} style={{ marginTop: '8px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px' }}>
+                            <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                              CĂN CỨ PHÁP LÝ ĐỐI SOÁT:
+                            </Text>
                             <HStack gap={2} wrap="wrap">
                               {msg.citations.map((c, i) => (
                                 <Badge

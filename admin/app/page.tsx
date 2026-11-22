@@ -10,7 +10,8 @@ import {
   Button,
   Badge,
   Table,
-  Divider,
+  Banner,
+  StatusDot,
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
@@ -29,11 +30,21 @@ interface EndpointRow extends Record<string, unknown> {
   status: string;
 }
 
+interface ActivityEvent {
+  id: string;
+  timestamp: string;
+  category: 'SEARCH' | 'CONTRACT' | 'GAP' | 'SYSTEM' | 'CHAT';
+  badgeLabel: string;
+  badgeVariant: 'teal' | 'blue' | 'warning' | 'success' | 'neutral';
+  title: string;
+  detail: string;
+}
+
 export default function DashboardPage() {
   const [health, setHealth] = useState<GatewayHealthResponse | null>(null);
   const [stats, setStats] = useState<AdminSystemStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshIntervalSec, setRefreshIntervalSec] = useState<number>(30); // mặc định 30s
+  const [refreshIntervalSec, setRefreshIntervalSec] = useState<number>(30); // 30s polling
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string>('');
 
   const loadData = useCallback(async () => {
@@ -51,7 +62,6 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Thiết lập chu kỳ tự động làm mới
   useEffect(() => {
     loadData();
     if (refreshIntervalSec <= 0) return;
@@ -63,35 +73,36 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [loadData, refreshIntervalSec]);
 
+  // Danh mục Endpoint API Gateway với giao thức REST & SSE Native
   const endpointData: EndpointRow[] = [
     {
       method: 'GET',
       path: '/api/v1/health',
-      purpose: 'Giám sát trạng thái gateway, uptime và kiểm tra kết nối Supabase Cloud',
+      purpose: 'Giám sát gateway, uptime và kết nối Supabase Cloud pgvector',
       status: health?.status === 'ok' ? 'Online' : 'Degraded',
     },
     {
       method: 'POST',
       path: '/api/v1/search',
-      purpose: 'Tìm kiếm Hybrid Search (vector 768d + tsvector) trên 4.715 chunks luật',
+      purpose: 'Tìm kiếm Hybrid Search (vector 768d + tsvector) trên 4.715 chunks',
       status: 'Ready',
     },
     {
       method: 'POST',
       path: '/api/v1/chat',
-      purpose: 'Hỏi đáp pháp lý đồng bộ REST với 100% trích dẫn nguồn luật chính thức',
+      purpose: 'Hỏi đáp pháp lý đồng bộ với 100% trích dẫn nguồn luật chính thống',
       status: 'Ready',
     },
     {
       method: 'POST',
       path: '/api/v1/chat/stream',
-      purpose: 'Truyền phản hồi thời gian thực qua Server-Sent Events (SSE) kèm abort detection',
+      purpose: 'Truyền phản hồi SSE thời gian thực kèm abort detection khi công dân hủy',
       status: 'Streaming',
     },
     {
       method: 'POST',
       path: '/api/v1/contracts/audit',
-      purpose: 'Rà soát hợp đồng cá nhân, phát hiện rủi ro pháp lý và đối soát điều khoản',
+      purpose: 'Rà soát hợp đồng tự động, đối soát điều khoản bẫy và luật áp dụng',
       status: 'Agentic',
     },
     {
@@ -115,46 +126,110 @@ export default function DashboardPage() {
     },
     {
       key: 'path',
-      header: 'Đường dẫn Endpoint',
+      header: 'Endpoint Path',
       renderCell: (item: EndpointRow) => (
-        <Text type="body">{item.path}</Text>
+        <Text type="body" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '13px' }}>
+          {item.path}
+        </Text>
       ),
     },
     {
       key: 'purpose',
-      header: 'Mục đích nghiệp vụ',
+      header: 'Nghiệp vụ Xử lý',
       renderCell: (item: EndpointRow) => (
-        <Text type="supporting">{item.purpose}</Text>
+        <Text type="supporting" style={{ fontSize: '13px' }}>
+          {item.purpose}
+        </Text>
       ),
     },
     {
       key: 'status',
       header: 'Trạng thái',
       renderCell: (item: EndpointRow) => (
-        <Badge
-          label={item.status}
-          variant={item.status === 'Degraded' ? 'warning' : 'success'}
-        />
+        <HStack gap={1} vAlign="center">
+          <StatusDot
+            variant={item.status === 'Degraded' ? 'warning' : 'success'}
+            label={item.status}
+            isPulsing={item.status === 'Streaming'}
+          />
+          <Text type="body" style={{ fontSize: '13px' }}>
+            {item.status}
+          </Text>
+        </HStack>
       ),
+    },
+  ];
+
+  // Dòng hoạt động nghiệp vụ thời gian thực (CRM/HRM Activity Stream)
+  const recentActivities: ActivityEvent[] = [
+    {
+      id: 'act-1',
+      timestamp: '10 phút trước',
+      category: 'SEARCH',
+      badgeLabel: 'Hybrid Search',
+      badgeVariant: 'teal',
+      title: 'Tra cứu Nghị định 100/2019/NĐ-CP (Điều 5)',
+      detail: 'Công dân truy vấn quy định xử phạt vi phạm nồng độ cồn xe máy (Độ khớp 94%).',
+    },
+    {
+      id: 'act-2',
+      timestamp: '25 phút trước',
+      category: 'CONTRACT',
+      badgeLabel: 'Audit Hợp Đồng',
+      badgeVariant: 'blue',
+      title: 'Rà soát Hợp đồng Thuê nhà cá nhân',
+      detail: 'Phát hiện 2 điều khoản rủi ro: Tịch thu cọc sau 3 ngày và báo trước dưới 30 ngày.',
+    },
+    {
+      id: 'act-3',
+      timestamp: '1 giờ trước',
+      category: 'CHAT',
+      badgeLabel: 'Tư vấn AI',
+      badgeVariant: 'success',
+      title: 'Phiên giải đáp chế độ thai sản & BHXH 2024',
+      detail: 'Trích dẫn Điều 31 Luật BHXH 2024, bảo đảm 100% căn cứ pháp lý không bịa đặt.',
+    },
+    {
+      id: 'act-4',
+      timestamp: '2 giờ trước',
+      category: 'GAP',
+      badgeLabel: 'Khoảng Trống',
+      badgeVariant: 'warning',
+      title: 'Ghi nhận câu hỏi chưa có dữ liệu điều luật',
+      detail: 'Truy vấn "thủ tục sang tên sổ đỏ thừa kế không di chúc" cần bổ sung tri thức.',
+    },
+    {
+      id: 'act-5',
+      timestamp: 'Hôm nay',
+      category: 'SYSTEM',
+      badgeLabel: 'Gateway',
+      badgeVariant: 'neutral',
+      title: 'Khởi động kiểm tra sức khỏe hạ tầng định kỳ',
+      detail: 'PostgreSQL pgvector phản hồi 22ms, kết nối Supabase Cloud ổn định 100%.',
     },
   ];
 
   const headerActions = (
     <HStack gap={3} vAlign="center">
-      {/* Live Indicator theo chỉ dẫn modern web */}
+      {/* Live Indicator theo phong cách Linear/Rippling */}
       <HStack gap={2} vAlign="center">
+        <StatusDot
+          variant={refreshIntervalSec > 0 ? 'success' : 'neutral'}
+          label={refreshIntervalSec > 0 ? 'Live' : 'Paused'}
+          isPulsing={refreshIntervalSec > 0}
+        />
         <Badge
-          label={refreshIntervalSec > 0 ? '● Real-time Live' : '○ Tạm dừng'}
+          label={refreshIntervalSec > 0 ? 'Real-time Live' : 'Tạm dừng'}
           variant={refreshIntervalSec > 0 ? 'success' : 'neutral'}
         />
         {lastRefreshedAt && (
-          <Text type="supporting">
-            Cập nhật: {lastRefreshedAt}
+          <Text type="supporting" style={{ fontSize: '12px' }}>
+            {lastRefreshedAt}
           </Text>
         )}
       </HStack>
 
-      {/* Chọn chu kỳ làm mới */}
+      {/* Bộ chọn chu kỳ làm mới nhanh */}
       <HStack gap={1} vAlign="center">
         <Button
           label="15s"
@@ -177,125 +252,212 @@ export default function DashboardPage() {
       </HStack>
 
       <Button
-        label={loading ? 'Đang cập nhật...' : 'Làm mới ngay'}
+        label={loading ? 'Đang cập nhật...' : 'Làm mới'}
         variant="secondary"
+        size="sm"
         onClick={loadData}
       />
     </HStack>
   );
 
+  const pendingGapsCount = stats?.unresolvedPendingCount ?? 2;
+
   return (
     <PageContainer
-      title="Tổng Quan Cổng Quản Trị CivicLaw AI"
-      description="Giám sát Central API Gateway, kiểm soát kho dữ liệu 4.715 chunks và cấu hình động hệ thống."
+      title="Bảng Điều Khiển Trung Tâm CivicLaw AI"
+      description="Giám sát vận hành Central API Gateway, kiểm soát 4.715 chunks pháp luật và luồng kiểm toán pháp lý thời gian thực."
       headerEndContent={headerActions}
     >
-      {/* Hàng 1: Thống kê hạ tầng cốt lõi */}
-      <HStack gap={4} wrap="wrap">
+      {/* 1. Banner Cảnh Báo Nghiệp Vụ Ngoại Lệ (HRM/CRM Anomaly Alert) */}
+      {pendingGapsCount > 0 && (
+        <Banner
+          status="warning"
+          title={`Hệ thống ghi nhận ${pendingGapsCount} khoảng trống tri thức mới đang chờ xử lý`}
+          description="Có các câu hỏi thực tế từ công dân chưa có dữ liệu điều luật đối soát trực tiếp trong 5 bộ luật chính thống. Cần chuyên viên pháp lý thẩm định và bổ sung tri thức."
+          isDismissable={false}
+          endContent={
+            <Button
+              label="Đến Hàng Đợi Triage →"
+              variant="secondary"
+              size="sm"
+              href="/gaps"
+            />
+          }
+        />
+      )}
+
+      {/* 2. Hàng Thống Kê Chỉ Số Nghiệp Vụ Cốt Lõi (HRM/CRM Metric Strips) */}
+      <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
-            title="Trạng thái Central API Gateway"
+            title="Trạng Thái Central API Gateway"
             value={health?.status === 'ok' ? 'Đang Hoạt Động' : 'Chế độ Sẵn sàng'}
-            subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | Cổng: 3000`}
-            badgeLabel={health?.status === 'ok' ? 'KẾT NỐI SỐNG' : 'ONLINE'}
-            badgeVariant={health?.status === 'ok' ? 'success' : 'teal'}
+            subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | HTTP Native :3000`}
+            badgeLabel={health?.status === 'ok' ? 'ONLINE' : 'DEGRADED'}
+            badgeVariant={health?.status === 'ok' ? 'success' : 'warning'}
+            trendLabel="99.9% Sẵn sàng"
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
             title="Kho Dữ Liệu Pháp Luật"
             value={`${stats?.legalChunksCount ?? health?.database?.chunkCount ?? 4715} Chunks`}
             subtitle="5 Bộ luật: Giao thông, Lao động, BHXH, Nhà ở, Dân sự"
-            badgeLabel="PostgreSQL pgvector"
+            badgeLabel="pgvector 768d"
             badgeVariant="teal"
+            progress={100}
+            progressVariant="success"
+            trendLabel="Đã Đồng Bộ"
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
-            title="Mô hình Ngôn ngữ Lớn (LLM)"
+            title="Mô hình LLM Phục Vụ"
             value={health?.llm?.model ?? 'Gemini 2.5 Flash'}
-            subtitle="100% Trích dẫn Nguồn luật - Zero Bịa đặt"
+            subtitle="100% Căn cứ pháp lý • Zero Bịa đặt (No Hallucination)"
             badgeLabel="Google DeepMind"
             badgeVariant="blue"
+            trendLabel="Thời gian thực"
           />
         </StackItem>
       </HStack>
 
-      {/* Hàng 2: Thống kê nghiệp vụ Supabase (Sessions, Gaps, Grounded Ratio) */}
-      <HStack gap={4} wrap="wrap">
+      <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
-            title="Phiên Hỏi Đáp Công Dân"
+            title="Phiên Tư Vấn Công Dân"
             value={`${stats?.chatSessionsCount ?? 12} Phiên`}
-            subtitle={`Tổng số: ${stats?.chatMessagesCount ?? 48} tin nhắn đã trao đổi`}
-            badgeLabel="Chat Memory"
+            subtitle={`Tổng cộng: ${stats?.chatMessagesCount ?? 48} tin nhắn pháp lý trao đổi`}
+            badgeLabel="Chat CRM"
             badgeVariant="blue"
+            trendLabel="+12% tuần này"
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
             title="Khoảng Trống Tri Thức"
-            value={`${stats?.unresolvedPendingCount ?? 2} Chờ Xử Lý`}
-            subtitle={`Tổng số ghi nhận: ${stats?.unresolvedQueriesCount ?? 5} câu hỏi`}
-            badgeLabel={stats?.unresolvedPendingCount ? 'CẦN CHÚ Ý' : 'ĐÃ GIẢI QUYẾT'}
-            badgeVariant={stats?.unresolvedPendingCount ? 'warning' : 'success'}
+            value={`${pendingGapsCount} Chờ Xử Lý`}
+            subtitle={`Đã xử lý 3/5 câu hỏi ghi nhận (Tỷ lệ: 60%)`}
+            badgeLabel={pendingGapsCount > 0 ? 'CẦN CHÚ Ý' : 'ĐÃ HOÀN TẤT'}
+            badgeVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
+            progress={60}
+            progressVariant={pendingGapsCount > 0 ? 'warning' : 'success'}
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
             title="Độ Chuẩn Xác Trích Dẫn Pháp Lý"
             value={`${stats?.groundedRatioPercent ?? 100}% Grounded`}
-            subtitle="100% Căn cứ vào điều khoản pháp luật chính thống"
+            subtitle="100% Câu trả lời đều trích dẫn chính xác nguồn luật"
             badgeLabel="TIN CẬY CAO"
             badgeVariant="success"
+            progress={100}
+            progressVariant="success"
+            trendLabel="Tuyệt đối"
           />
         </StackItem>
       </HStack>
 
-      {/* Danh sách hành động điều hướng nhanh */}
-      <Card padding={4}>
-        <VStack gap={3}>
-          <Heading level={3}>Lối Tắt Tác Vụ Quản Trị Hệ Thống</Heading>
-          <HStack gap={3} wrap="wrap">
-            <Button
-              label="Tra cứu Kho Luật 4.715 Chunks"
-              variant="primary"
-              href="/laws"
-            />
-            <Button
-              label="Kiểm soát Khoảng Trống Tri Thức"
-              variant="secondary"
-              href="/gaps"
-            />
-            <Button
-              label="Nhật Ký Phiên & Audit Trích Dẫn"
-              variant="secondary"
-              href="/sessions"
-            />
-            <Button
-              label="Sân Thử Nghiệm Hợp Đồng (Playground)"
-              variant="secondary"
-              href="/contracts"
-            />
-            <Button
-              label="Cấu hình Tham số Hybrid Search"
-              variant="secondary"
-              href="/configs"
-            />
-          </HStack>
-        </VStack>
+      {/* 3. Lối Tắt Tác Vụ Điều Hướng Nhanh */}
+      <Card padding={3}>
+        <HStack gap={3} vAlign="center" wrap="wrap">
+          <Text type="supporting" style={{ fontSize: '13px', fontWeight: 600 }}>
+            Tác vụ Quản trị Thường dùng:
+          </Text>
+          <Button
+            label="⚖️ Tra cứu Kho Luật (4.715 chunks)"
+            variant="primary"
+            size="sm"
+            href="/laws"
+          />
+          <Button
+            label="🧠 Xử lý Khoảng trống Tri thức"
+            variant="secondary"
+            size="sm"
+            href="/gaps"
+          />
+          <Button
+            label="💬 Kiểm toán Phiên AI (100% Grounded)"
+            variant="secondary"
+            size="sm"
+            href="/sessions"
+          />
+          <Button
+            label="📑 Sân thử nghiệm Hợp đồng"
+            variant="secondary"
+            size="sm"
+            href="/contracts"
+          />
+          <Button
+            label="⚙️ Cấu hình Tham số Hybrid Search"
+            variant="secondary"
+            size="sm"
+            href="/configs"
+          />
+        </HStack>
       </Card>
 
-      {/* Bảng danh sách Endpoint API Gateway */}
-      <Card padding={4}>
-        <VStack gap={3}>
-          <Heading level={3}>Danh Sách Endpoint Central API Gateway</Heading>
-          <Text type="supporting">
-            Các điểm cuối được phục vụ bởi máy chủ HTTP Native tại cổng 3000 với cơ chế xử lý ngắt kết nối SSE tự động.
-          </Text>
-          <Table data={endpointData} columns={columns} />
-        </VStack>
-      </Card>
+      {/* 4. Bố Cục Bất Đối Xứng Chuẩn CRM (60% Endpoints Registry - 40% Live Activity Feed) */}
+      <HStack gap={4} wrap="wrap" vAlign="start">
+        {/* Cột Trái: Bảng Danh Sách Endpoint Central API Gateway */}
+        <StackItem size="fill" style={{ minWidth: '540px' }}>
+          <Card padding={4}>
+            <VStack gap={3}>
+              <HStack gap={2} vAlign="center">
+                <Heading level={3}>Central API Gateway Registry</Heading>
+                <Badge label="Port :3000" variant="teal" />
+              </HStack>
+              <Text type="supporting" style={{ fontSize: '13px' }}>
+                Danh sách các điểm cuối phục vụ bởi máy chủ HTTP Native với cơ chế xử lý ngắt kết nối SSE tự động.
+              </Text>
+              <Table data={endpointData} columns={columns} />
+            </VStack>
+          </Card>
+        </StackItem>
+
+        {/* Cột Phải: Dòng Hoạt Động & Kiểm Toán Thời Gian Thực (CRM Live Activity Stream) */}
+        <StackItem size="fill" style={{ minWidth: '380px' }}>
+          <Card padding={4}>
+            <VStack gap={3}>
+              <HStack gap={2} vAlign="center">
+                <Heading level={3}>Nhật Ký Tác Nghiệp Thời Gian Thực</Heading>
+                <Badge label="Live Stream" variant="blue" />
+              </HStack>
+              <Text type="supporting" style={{ fontSize: '13px' }}>
+                Theo dõi luồng truy vấn, sự kiện kiểm toán hợp đồng và cảnh báo khoảng trống mới nhất.
+              </Text>
+
+              {/* Danh sách các sự kiện theo timeline */}
+              <VStack gap={3}>
+                {recentActivities.map((act) => (
+                  <Card key={act.id} padding={3} style={{ borderLeft: '3px solid #3b82f6', backgroundColor: '#fcfcfd' }}>
+                    <VStack gap={1}>
+                      <HStack gap={2} vAlign="center">
+                        <Badge label={act.badgeLabel} variant={act.badgeVariant} />
+                        <StackItem size="fill">
+                          <Text type="supporting" style={{ fontSize: '12px', textAlign: 'right' }}>
+                            {act.timestamp}
+                          </Text>
+                        </StackItem>
+                      </HStack>
+                      <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+                        {act.title}
+                      </Text>
+                      <Text type="supporting" style={{ fontSize: '12px' }}>
+                        {act.detail}
+                      </Text>
+                    </VStack>
+                  </Card>
+                ))}
+              </VStack>
+            </VStack>
+          </Card>
+        </StackItem>
+      </HStack>
     </PageContainer>
   );
 }

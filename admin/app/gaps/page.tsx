@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   VStack,
   HStack,
@@ -12,6 +12,8 @@ import {
   Table,
   Divider,
   TextInput,
+  Drawer,
+  DrawerHeader,
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
@@ -42,28 +44,27 @@ export default function KnowledgeGapsPage() {
   const [targetAction, setTargetAction] = useState<'resolved' | 'ignored'>('resolved');
   const [adminNote, setAdminNote] = useState('');
 
-  const noteDialogRef = useRef<HTMLDialogElement | null>(null);
-
   const loadData = async () => {
     setLoading(true);
-    const data = await fetchUnresolvedQueries();
-    setItems(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const data = await fetchUnresolvedQueries();
+      setItems(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const openActionDialog = (item: UnresolvedQueryItem, action: 'resolved' | 'ignored') => {
+  const openActionDrawer = (item: UnresolvedQueryItem, action: 'resolved' | 'ignored') => {
     setTargetItem(item);
     setTargetAction(action);
     setAdminNote('');
-    noteDialogRef.current?.showModal();
   };
 
-  const closeActionDialog = () => {
-    noteDialogRef.current?.close();
+  const closeActionDrawer = () => {
     setTargetItem(null);
   };
 
@@ -73,28 +74,14 @@ export default function KnowledgeGapsPage() {
     setItems((prev) =>
       (prev || []).map((item) => (item.id === targetItem.id ? { ...item, status: targetAction } : item))
     );
-    closeActionDialog();
-  };
-
-  // Light dismiss khi click ngoài backdrop theo hướng dẫn Modern Web Guidance
-  const handleDialogBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    const dialog = noteDialogRef.current;
-    if (!dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    const isOutside =
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom;
-    if (isOutside) {
-      closeActionDialog();
-    }
+    closeActionDrawer();
   };
 
   const unreviewedCount = (items || []).filter((i) => i.status === 'unreviewed').length;
   const resolvedCount = (items || []).filter((i) => i.status === 'resolved').length;
   const ignoredCount = (items || []).filter((i) => i.status === 'ignored').length;
   const totalHits = (items || []).reduce((sum, i) => sum + i.hit_count, 0);
+  const resolutionRate = items.length > 0 ? Math.round((resolvedCount / items.length) * 100) : 0;
 
   // Lọc danh sách theo Tab trạng thái
   const filteredItems = (items || []).filter((item) => {
@@ -122,9 +109,16 @@ export default function KnowledgeGapsPage() {
   const columns = [
     {
       key: 'query_text',
-      header: 'Câu hỏi của công dân',
+      header: 'Nội dung câu hỏi công dân',
       renderCell: (item: GapRow) => (
-        <Text type="body">{item.query_text}</Text>
+        <VStack gap={1}>
+          <Text type="body" style={{ fontWeight: 600, fontSize: '13.5px' }}>
+            {item.query_text}
+          </Text>
+          <Text type="supporting" style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace' }}>
+            Mã: {item.id}
+          </Text>
+        </VStack>
       ),
     },
     {
@@ -136,9 +130,9 @@ export default function KnowledgeGapsPage() {
     },
     {
       key: 'hit_count',
-      header: 'Tần suất hỏi',
+      header: 'Lượt quan tâm',
       renderCell: (item: GapRow) => (
-        <Badge label={`${item.hit_count} lượt`} variant="blue" />
+        <Badge label={`${item.hit_count} truy vấn`} variant="blue" />
       ),
     },
     {
@@ -159,24 +153,24 @@ export default function KnowledgeGapsPage() {
           {item.status === 'unreviewed' ? (
             <>
               <Button
-                label="Đã giải quyết"
+                label="Đã bổ sung"
                 variant="primary"
                 size="sm"
-                onClick={() => openActionDialog(item.raw, 'resolved')}
+                onClick={() => openActionDrawer(item.raw, 'resolved')}
               />
               <Button
                 label="Bỏ qua"
                 variant="ghost"
                 size="sm"
-                onClick={() => openActionDialog(item.raw, 'ignored')}
+                onClick={() => openActionDrawer(item.raw, 'ignored')}
               />
             </>
           ) : (
             <Button
-              label="Đổi trạng thái"
+              label="Cập nhật"
               variant="secondary"
               size="sm"
-              onClick={() => openActionDialog(item.raw, item.status === 'resolved' ? 'ignored' : 'resolved')}
+              onClick={() => openActionDrawer(item.raw, item.status === 'resolved' ? 'ignored' : 'resolved')}
             />
           )}
         </HStack>
@@ -186,48 +180,56 @@ export default function KnowledgeGapsPage() {
 
   return (
     <PageContainer
-      title="Quản Trị Khoảng Trống Tri Thức (Knowledge Gaps)"
-      description="Theo dõi các câu hỏi công dân tìm kiếm có điểm tin cậy dưới ngưỡng quy định để lập kế hoạch bổ sung dữ liệu luật."
+      title="Hàng Đợi Xử Lý Khoảng Trống Tri Thức (Triage Hub)"
+      description="Quản lý các truy vấn của công dân có độ tin cậy thấp hoặc chưa có văn bản luật trực tiếp để đối soát, lập kế hoạch nạp dữ liệu bổ sung."
       headerEndContent={
         <Button
-          label={loading ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}
+          label={loading ? 'Đang cập nhật...' : 'Làm mới'}
           variant="secondary"
+          size="sm"
           onClick={loadData}
         />
       }
     >
-      {/* Hàng thẻ thống kê chỉ số Gaps */}
-      <HStack gap={4} wrap="wrap">
+      {/* Thẻ chỉ số tổng quan phong cách HRM/CRM */}
+      <HStack gap={3} wrap="wrap">
         <StackItem size="fill">
           <StatCard
-            title="Câu Hỏi Chờ Xử Lý"
+            title="Câu Hỏi Chờ Thẩm Định"
             value={`${unreviewedCount} Câu hỏi`}
-            subtitle="Cần rà soát và bổ sung văn bản hướng dẫn thi hành"
-            badgeLabel="CẦN BỔ SUNG"
-            badgeVariant="warning"
+            subtitle="Cần rà soát và bổ sung văn bản hướng dẫn"
+            badgeLabel={unreviewedCount > 0 ? 'CẦN CHÚ Ý' : 'HOÀN HẢO'}
+            badgeVariant={unreviewedCount > 0 ? 'warning' : 'success'}
+            trendLabel={unreviewedCount > 0 ? 'Ưu tiên cao' : 'Sạch sẽ'}
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
-            title="Đã Giải Quyết"
+            title="Đã Giải Quyết Tri Thức"
             value={`${resolvedCount} Câu hỏi`}
-            subtitle="Đã cập nhật chunk vào cơ sở dữ liệu pháp luật"
-            badgeLabel="HOÀN TẤT"
+            subtitle="Đã nạp bổ sung chunks vào pgvector"
+            badgeLabel="ĐÃ BỔ SUNG"
             badgeVariant="success"
+            progress={resolutionRate}
+            progressVariant="success"
+            trendLabel={`${resolutionRate}% Tỷ lệ giải quyết`}
           />
         </StackItem>
+
         <StackItem size="fill">
           <StatCard
             title="Tổng Lượt Nhu Cầu Tìm Kiếm"
             value={`${totalHits} Lượt`}
-            subtitle="Tần suất công dân quan tâm các chủ đề pháp lý mới"
+            subtitle="Tần suất công dân hỏi về các khoảng trống"
             badgeLabel="PHÂN TÍCH NHU CẦU"
             badgeVariant="blue"
+            trendLabel="Thời gian thực"
           />
         </StackItem>
       </HStack>
 
-      {/* Tabs lọc trạng thái câu hỏi theo chuẩn Modern Web Accessibility */}
+      {/* Tabs lọc trạng thái theo chuẩn CRM Queue */}
       <HStack gap={2} wrap="wrap" role="tablist" aria-label="Lọc theo trạng thái câu hỏi">
         {statusTabs.map((tab) => {
           const isSelected = filterStatus === tab.id;
@@ -249,55 +251,60 @@ export default function KnowledgeGapsPage() {
       <Card padding={4}>
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
-            <Heading level={3}>Danh Sách Khoảng Trống Tri Thức Pháp Luật</Heading>
-            <Badge label={`${filteredItems.length} mục`} variant="teal" />
+            <Heading level={3}>Danh Sách Khoảng Trống Cần Xử Lý</Heading>
+            <Badge label={`${filteredItems.length} câu hỏi`} variant="teal" />
           </HStack>
           <Table data={tableData} columns={columns} />
         </VStack>
       </Card>
 
-      {/* Dialog Modal xác nhận xử lý Gap kèm Ghi chú Quản trị theo chuẩn Native Dialog */}
-      <dialog
-        ref={noteDialogRef}
-        onClick={handleDialogBackdropClick}
-        aria-labelledby="gap-dialog-title"
-        style={{
-          maxWidth: '560px',
-          width: '90%',
-          padding: '24px',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          backgroundColor: '#ffffff',
-          color: '#1a202c',
-          overscrollBehavior: 'contain',
-        }}
+      {/* Slide-over Drawer Thẩm Định & Ghi Chú Tác Nghiệp (thay thế Modal cũ) */}
+      <Drawer
+        isOpen={targetItem !== null}
+        onOpenChange={(isOpen) => !isOpen && closeActionDrawer()}
+        side="end"
+        width={540}
+        label="Thẩm định và xử lý khoảng trống tri thức"
       >
         {targetItem && (
-          <VStack gap={4}>
-            <VStack gap={1}>
-              <Heading level={2} id="gap-dialog-title">
-                {targetAction === 'resolved' ? 'Xác Nhận Giải Quyết Khoảng Trống' : 'Xác Nhận Bỏ Qua Khoảng Trống'}
-              </Heading>
-              <Text type="supporting">
-                Câu hỏi: &quot;{targetItem.query_text}&quot; ({targetItem.domain})
-              </Text>
-            </VStack>
+          <VStack gap={4} style={{ padding: '24px' }}>
+            <DrawerHeader
+              title={targetAction === 'resolved' ? 'Xác Nhận Đã Bổ Sung Tri Thức' : 'Xác Nhận Bỏ Qua Khoảng Trống'}
+              subtitle={`Lĩnh vực: ${targetItem.domain} • Lượt hỏi: ${targetItem.hit_count}`}
+              onOpenChange={closeActionDrawer}
+              endContent={
+                <Badge
+                  label={targetAction === 'resolved' ? 'Giải Quyết' : 'Bỏ Qua'}
+                  variant={targetAction === 'resolved' ? 'success' : 'neutral'}
+                />
+              }
+            />
 
             <Divider />
 
             <VStack gap={2}>
-              <Text type="body">
+              <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                CÂU HỎI TỪ CÔNG DÂN:
+              </Text>
+              <Card padding={3} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <Text type="body" style={{ fontWeight: 600, fontSize: '14px' }}>
+                  &quot;{targetItem.query_text}&quot;
+                </Text>
+              </Card>
+            </VStack>
+
+            <VStack gap={2}>
+              <Text type="body" style={{ fontSize: '13px' }}>
                 {targetAction === 'resolved'
-                  ? 'Đánh dấu câu hỏi này đã được bổ sung dữ liệu điều khoản luật vào cơ sở dữ liệu pgvector.'
-                  : 'Bỏ qua câu hỏi này nếu nội dung không thuộc phạm vi 5 bộ luật chính thống.'}
+                  ? 'Hành động này đánh dấu câu hỏi đã có dữ liệu điều khoản trong hệ thống hoặc đã được nạp bổ sung vào cơ sở dữ liệu PostgreSQL pgvector.'
+                  : 'Bỏ qua câu hỏi này nếu nội dung không thuộc phạm vi 5 bộ luật chính thống hoặc không mang tính pháp lý.'}
               </Text>
 
               <TextInput
-                label="Ghi chú quản trị (Tùy chọn - Lưu vết kiểm toán)"
+                label="Ghi chú tác nghiệp (Lưu vết kiểm toán)"
                 value={adminNote}
                 onChange={setAdminNote}
-                placeholder="Ví dụ: Đã bổ sung Nghị định số XYZ/2026/NĐ-CP hoặc Câu hỏi ngoài phạm vi..."
+                placeholder="Ví dụ: Đã nạp Nghị định bổ sung số 123... hoặc Câu hỏi ngoài phạm vi điều chỉnh"
               />
             </VStack>
 
@@ -306,19 +313,21 @@ export default function KnowledgeGapsPage() {
             <HStack gap={3} vAlign="center">
               <StackItem size="fill" />
               <Button
-                label="Hủy bỏ (Esc)"
+                label="Hủy bỏ"
                 variant="ghost"
-                onClick={closeActionDialog}
+                size="sm"
+                onClick={closeActionDrawer}
               />
               <Button
-                label={targetAction === 'resolved' ? 'Lưu & Đã Giải Quyết' : 'Lưu & Bỏ Qua'}
+                label={targetAction === 'resolved' ? 'Lưu: Đã Giải Quyết' : 'Lưu: Bỏ Qua'}
                 variant="primary"
+                size="sm"
                 onClick={handleConfirmAction}
               />
             </HStack>
           </VStack>
         )}
-      </dialog>
+      </Drawer>
     </PageContainer>
   );
 }

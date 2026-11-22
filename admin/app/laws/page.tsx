@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   VStack,
   HStack,
@@ -13,6 +13,9 @@ import {
   Divider,
   TextInput,
   Selector,
+  Drawer,
+  DrawerHeader,
+  ProgressBar,
   StackItem,
 } from '@astryxdesign/core';
 import { searchLaws, LegalSearchResultItem } from '@/lib/api-client';
@@ -36,8 +39,6 @@ export default function LawsBrowserPage() {
   const [total, setTotal] = useState(0);
   const [selectedLaw, setSelectedLaw] = useState<LegalSearchResultItem | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
-
-  const detailDialogRef = useRef<HTMLDialogElement | null>(null);
 
   const performSearch = async (searchQuery: string, searchDomain: string) => {
     setLoading(true);
@@ -66,30 +67,13 @@ export default function LawsBrowserPage() {
     performSearch(query, selectedDomain);
   };
 
-  const openDetailModal = (law: LegalSearchResultItem) => {
+  const openDetailDrawer = (law: LegalSearchResultItem) => {
     setSelectedLaw(law);
     setCopySuccess(false);
-    detailDialogRef.current?.showModal();
   };
 
-  const closeDetailModal = () => {
-    detailDialogRef.current?.close();
+  const closeDetailDrawer = () => {
     setSelectedLaw(null);
-  };
-
-  // Light dismiss khi click ngoài backdrop theo hướng dẫn Modern Web Guidance
-  const handleDialogBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    const dialog = detailDialogRef.current;
-    if (!dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    const isOutside =
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom;
-    if (isOutside) {
-      closeDetailModal();
-    }
   };
 
   const handleCopyContent = async () => {
@@ -131,33 +115,47 @@ export default function LawsBrowserPage() {
       key: 'article_clause',
       header: 'Điều / Khoản',
       renderCell: (item: LawRow) => (
-        <Text type="body">{item.article_clause}</Text>
+        <Text type="body" style={{ fontWeight: 600, fontSize: '13px' }}>
+          {item.article_clause}
+        </Text>
       ),
     },
     {
       key: 'domain_title',
-      header: 'Tiêu đề / Lĩnh vực',
+      header: 'Tiêu đề quy định',
       renderCell: (item: LawRow) => (
-        <Text type="supporting">{item.domain_title}</Text>
+        <Text type="supporting" style={{ fontSize: '13px' }}>
+          {item.domain_title}
+        </Text>
       ),
     },
     {
       key: 'content',
       header: 'Nội dung trích đoạn',
       renderCell: (item: LawRow) => (
-        <Text type="body">
-          {item.content.length > 120 ? `${item.content.slice(0, 120)}...` : item.content}
+        <Text type="body" style={{ fontSize: '13px' }}>
+          {item.content.length > 110 ? `${item.content.slice(0, 110)}...` : item.content}
         </Text>
       ),
     },
     {
       key: 'similarity',
-      header: 'Độ khớp',
+      header: 'Độ khớp Hybrid',
       renderCell: (item: LawRow) => (
-        <Badge
-          label={`${item.similarity}%`}
-          variant={item.similarity >= 80 ? 'success' : 'warning'}
-        />
+        <HStack gap={2} vAlign="center" style={{ minWidth: '120px' }}>
+          <StackItem size="fill">
+            <ProgressBar
+              value={item.similarity}
+              max={100}
+              label="Độ khớp"
+              isLabelHidden
+              variant={item.similarity >= 85 ? 'success' : 'warning'}
+            />
+          </StackItem>
+          <Text type="supporting" style={{ fontSize: '12px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+            {item.similarity}%
+          </Text>
+        </HStack>
       ),
     },
     {
@@ -165,10 +163,10 @@ export default function LawsBrowserPage() {
       header: 'Thao tác',
       renderCell: (item: LawRow) => (
         <Button
-          label="Xem toàn văn"
+          label="Chi tiết"
           variant="secondary"
           size="sm"
-          onClick={() => openDetailModal(item.raw)}
+          onClick={() => openDetailDrawer(item.raw)}
         />
       ),
     },
@@ -176,10 +174,10 @@ export default function LawsBrowserPage() {
 
   return (
     <PageContainer
-      title="Trình Duyệt & Tra Cứu Kho Luật (4.715 Chunks)"
-      description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector."
+      title="Tra Cứu Kho Dữ Liệu Luật (4.715 Chunks)"
+      description="Tìm kiếm Hybrid Search thời gian thực kết hợp Vector Embeddings 768 chiều và Full-Text Search tsvector với độ trễ thấp."
     >
-      {/* Tabs lọc nhanh 5 bộ luật theo tiêu chuẩn Modern Web Accessibility */}
+      {/* Bộ lọc lĩnh vực nhanh dạng Tabs chuẩn CRM */}
       <HStack gap={2} wrap="wrap" role="tablist" aria-label="Bộ lọc lĩnh vực pháp luật">
         {domainTabs.map((tab) => {
           const isSelected = domain === tab.value;
@@ -197,21 +195,21 @@ export default function LawsBrowserPage() {
         })}
       </HStack>
 
-      {/* Thanh tìm kiếm & Bộ chọn lĩnh vực */}
+      {/* Thanh tìm kiếm toàn diện (Omni-search Bar) */}
       <Card padding={4}>
-        <VStack gap={4}>
+        <VStack gap={3}>
           <HStack gap={3} vAlign="center" wrap="wrap">
             <StackItem size="fill">
               <TextInput
-                label="Từ khóa tìm kiếm hoặc câu hỏi pháp lý"
+                label="Từ khóa tra cứu hoặc nội dung tranh chấp pháp lý"
                 value={query}
                 onChange={setQuery}
-                placeholder="Nhập từ khóa (ví dụ: sa thải, bảo hiểm một lần, đặt cọc thuê nhà...)"
+                placeholder="Nhập từ khóa (ví dụ: nồng độ cồn, thử việc 90 ngày, bẫy cọc, rút bảo hiểm xã hội...)"
               />
             </StackItem>
             <StackItem size="static">
               <Selector
-                label="Lĩnh vực pháp luật"
+                label="Lọc theo Lĩnh vực"
                 value={domain}
                 onChange={setDomain}
                 options={domainTabs}
@@ -227,8 +225,8 @@ export default function LawsBrowserPage() {
           </HStack>
 
           <HStack gap={2} vAlign="center">
-            <Text type="supporting">
-              {loading ? 'Đang truy vấn...' : `Tìm thấy ${total} điều khoản phù hợp`}
+            <Text type="supporting" style={{ fontSize: '13px' }}>
+              {loading ? 'Đang truy vấn kho luật...' : `Tìm thấy ${total} điều khoản phù hợp`}
             </Text>
             {domain && (
               <Badge label={`Lĩnh vực: ${domain}`} variant="blue" />
@@ -237,69 +235,58 @@ export default function LawsBrowserPage() {
         </VStack>
       </Card>
 
-      {/* Bảng hiển thị kết quả */}
+      {/* Bảng dữ liệu Grid mật độ cao */}
       <Card padding={4}>
         <VStack gap={3}>
           <HStack gap={2} vAlign="center">
-            <Heading level={3}>Danh Sách Điều Khoản Pháp Luật</Heading>
+            <Heading level={3}>Danh Sách Điều Khoản & Căn Cứ Pháp Lý</Heading>
             <Badge label={`${results.length} hiển thị`} variant="teal" />
           </HStack>
           <Table data={tableData} columns={columns} />
         </VStack>
       </Card>
 
-      {/* Dialog Modal xem chi tiết toàn văn điều khoản theo chuẩn Native Dialog của Modern Web Guidance */}
-      <dialog
-        ref={detailDialogRef}
-        onClick={handleDialogBackdropClick}
-        aria-labelledby="law-detail-title"
-        style={{
-          maxWidth: '750px',
-          width: '90%',
-          padding: '24px',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          backgroundColor: '#ffffff',
-          color: '#1a202c',
-          overscrollBehavior: 'contain',
-        }}
+      {/* Drawer trượt cạnh phải (Slide-Over Sheet) chuẩn CRM/HRM thay thế Modal cũ */}
+      <Drawer
+        isOpen={selectedLaw !== null}
+        onOpenChange={(isOpen) => !isOpen && closeDetailDrawer()}
+        side="end"
+        width={580}
+        label="Chi tiết toàn văn điều khoản pháp luật"
       >
         {selectedLaw && (
-          <VStack gap={4}>
-            {/* Header Dialog */}
-            <HStack gap={3} vAlign="center">
-              <StackItem size="fill">
-                <VStack gap={1}>
-                  <Heading level={2} id="law-detail-title">
-                    {selectedLaw.article_number || 'Điều khoản'} {selectedLaw.clause_number || ''}
-                  </Heading>
-                  <Text type="supporting">
-                    Văn bản pháp lý: {selectedLaw.document_number} — {selectedLaw.domain || 'Pháp luật Việt Nam'}
-                  </Text>
-                </VStack>
-              </StackItem>
-              <Badge
-                label={`Độ khớp ${Math.round((selectedLaw.similarity || selectedLaw.score || 0.9) * 100)}%`}
-                variant="success"
-              />
-            </HStack>
+          <VStack gap={4} style={{ padding: '24px' }}>
+            <DrawerHeader
+              title={`${selectedLaw.article_number || 'Điều khoản'} ${selectedLaw.clause_number || ''}`}
+              subtitle={`${selectedLaw.document_number} • ${selectedLaw.domain || 'Pháp luật Việt Nam'}`}
+              onOpenChange={closeDetailDrawer}
+              endContent={
+                <Badge
+                  label={`Độ khớp ${Math.round((selectedLaw.similarity || selectedLaw.score || 0.9) * 100)}%`}
+                  variant="success"
+                />
+              }
+            />
 
             <Divider />
 
-            {/* Nội dung tiêu đề điều luật */}
+            {/* Tiêu đề điều khoản */}
             {selectedLaw.title && (
               <VStack gap={1}>
-                <Text type="supporting">Tiêu đề quy định:</Text>
+                <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                  TIÊU ĐỀ NỘI DUNG:
+                </Text>
                 <Heading level={4}>{selectedLaw.title}</Heading>
               </VStack>
             )}
 
-            {/* Toàn văn nội dung pháp luật */}
+            {/* Toàn văn nội dung */}
             <VStack gap={2}>
-              <Text type="supporting">Nội dung pháp lý toàn văn:</Text>
-              <Card padding={3}>
-                <Text type="body" style={{ lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+              <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                NỘI DUNG PHÁP LÝ TOÀN VĂN:
+              </Text>
+              <Card padding={3} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <Text type="body" style={{ lineHeight: '1.7', whiteSpace: 'pre-line', fontSize: '13.5px' }}>
                   {selectedLaw.content}
                 </Text>
               </Card>
@@ -307,27 +294,29 @@ export default function LawsBrowserPage() {
 
             <Divider />
 
-            {/* Footer Dialog */}
-            <HStack gap={3} vAlign="center">
+            {/* Thao tác Drawer */}
+            <HStack gap={2} vAlign="center">
               <StackItem size="fill">
                 {copySuccess && (
-                  <Badge label="✓ Đã sao chép vào bộ nhớ tạm!" variant="success" />
+                  <Badge label="✓ Đã chép trích dẫn!" variant="success" />
                 )}
               </StackItem>
               <Button
-                label="Sao chép toàn văn"
+                label="Sao chép trích dẫn"
                 variant="secondary"
+                size="sm"
                 onClick={handleCopyContent}
               />
               <Button
-                label="Đóng (Esc)"
+                label="Đóng"
                 variant="primary"
-                onClick={closeDetailModal}
+                size="sm"
+                onClick={closeDetailDrawer}
               />
             </HStack>
           </VStack>
         )}
-      </dialog>
+      </Drawer>
     </PageContainer>
   );
 }

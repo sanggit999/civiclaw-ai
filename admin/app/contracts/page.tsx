@@ -10,6 +10,7 @@ import {
   Button,
   Badge,
   Divider,
+  StatusDot,
   StackItem,
 } from '@astryxdesign/core';
 import { StatCard } from '@/components/StatCard';
@@ -21,8 +22,10 @@ import {
 
 const SAMPLE_CONTRACTS = {
   rental: {
-    name: 'Hợp đồng thuê nhà (Có điều khoản bẫy cọc & báo trước 3 ngày)',
+    name: 'Thuê Nhà (Bẫy cọc 3 ngày)',
     type: 'RENTAL',
+    badge: 'RỦI RO CAO',
+    badgeVariant: 'warning' as const,
     text: `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 Độc lập - Tự do - Hạnh phúc
 
@@ -40,8 +43,10 @@ Hai bên thỏa thuận ký hợp đồng với các điều khoản sau:
 Điều 6: Hợp đồng có hiệu lực kể từ ngày ký.`,
   },
   labor: {
-    name: 'Hợp đồng lao động (Thử việc 90 ngày & Lương 70%)',
+    name: 'Lao Động (Thử việc 90 ngày & Lương 70%)',
     type: 'LABOR',
+    badge: 'RỦI RO TRUNG BÌNH',
+    badgeVariant: 'blue' as const,
     text: `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 Độc lập - Tự do - Hạnh phúc
 
@@ -58,8 +63,10 @@ Hai bên thỏa thuận:
 Điều 5: Công ty không có trách nhiệm đóng các loại bảo hiểm xã hội bắt buộc trong thời gian thử việc.`,
   },
   loan: {
-    name: 'Hợp đồng vay tiền cá nhân (Lãi suất 30%/năm)',
+    name: 'Vay Tiền (Lãi suất 30%/năm)',
     type: 'CIVIL',
+    badge: 'LÃI VƯỢT TRẦN',
+    badgeVariant: 'warning' as const,
     text: `GIẤY VAY TIỀN VÀ HỢP ĐỒNG VAY TÀI SẢN
 
 Bên cho vay: Hoàng Văn D.
@@ -76,11 +83,13 @@ Nội dung thỏa thuận:
 export default function ContractPlaygroundPage() {
   const [contractText, setContractText] = useState(SAMPLE_CONTRACTS.rental.text);
   const [contractType, setContractType] = useState('RENTAL');
+  const [activeSample, setActiveSample] = useState<'rental' | 'labor' | 'loan'>('rental');
   const [report, setReport] = useState<ContractAuditReport | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSelectSample = (sampleKey: 'rental' | 'labor' | 'loan') => {
     const sample = SAMPLE_CONTRACTS[sampleKey];
+    setActiveSample(sampleKey);
     setContractText(sample.text);
     setContractType(sample.type);
     setReport(null);
@@ -102,61 +111,64 @@ export default function ContractPlaygroundPage() {
       title="Sân Thử Nghiệm Kiểm Toán Hợp Đồng (Contract Auditor Testbed)"
       description="Thử nghiệm trực tiếp Agentic Contract Auditor đối soát các điều khoản hợp đồng cá nhân với 5 Bộ luật chính thống và phát hiện bẫy pháp lý."
     >
-      {/* Các mẫu hợp đồng thử nghiệm nhanh */}
-      <Card padding={4}>
-        <VStack gap={3}>
-          <Heading level={3}>Chọn Mẫu Hợp Đồng Thử Nghiệm Nhanh</Heading>
-          <HStack gap={3} wrap="wrap">
-            <Button
-              label="Mẫu 1: Thuê Nhà (Bẫy Tịch Thu Cọc)"
-              variant="secondary"
-              onClick={() => handleSelectSample('rental')}
-            />
-            <Button
-              label="Mẫu 2: Lao Động (Thử Việc 90 Ngày & Lương 70%)"
-              variant="secondary"
-              onClick={() => handleSelectSample('labor')}
-            />
-            <Button
-              label="Mẫu 3: Vay Tiền (Lãi Suất Vượt Trần 30%/Năm)"
-              variant="secondary"
-              onClick={() => handleSelectSample('loan')}
-            />
-          </HStack>
-        </VStack>
+      {/* Thanh lựa chọn Preset mẫu nhanh kiểu Ironclad */}
+      <Card padding={3}>
+        <HStack gap={3} vAlign="center" wrap="wrap">
+          <Text type="supporting" style={{ fontSize: '13px', fontWeight: 600 }}>
+            Mẫu Thử Nghiệm Nhanh:
+          </Text>
+          {(['rental', 'labor', 'loan'] as const).map((key) => {
+            const s = SAMPLE_CONTRACTS[key];
+            const isSelected = activeSample === key;
+            return (
+              <Button
+                key={key}
+                label={`${s.name} [${s.badge}]`}
+                variant={isSelected ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleSelectSample(key)}
+              />
+            );
+          })}
+        </HStack>
       </Card>
 
-      {/* Khu vực nhập văn bản hợp đồng */}
+      {/* Editor nhập văn bản hợp đồng với kiểu dáng Monospace chuyên nghiệp */}
       <Card padding={4}>
-        <VStack gap={4}>
-          <Heading level={3}>Văn Bản Hợp Đồng Cần Rà Soát</Heading>
+        <VStack gap={3}>
+          <HStack gap={2} vAlign="center">
+            <Heading level={3}>Văn Bản Hợp Đồng Cần Rà Soát</Heading>
+            <Badge label={`Loại: ${contractType}`} variant="teal" />
+          </HStack>
 
           <textarea
             value={contractText}
             onChange={(e) => setContractText(e.target.value)}
-            rows={12}
+            rows={11}
             style={{
               width: '100%',
-              padding: '12px',
+              padding: '14px',
               borderRadius: '8px',
-              border: '1px solid #cbd5e0',
-              fontFamily: 'monospace',
-              fontSize: '14px',
+              border: '1px solid #cbd5e1',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '13.5px',
               lineHeight: '1.6',
               boxSizing: 'border-box',
               resize: 'vertical',
+              backgroundColor: '#fafafa',
             }}
             placeholder="Dán toàn văn nội dung hợp đồng cá nhân vào đây..."
           />
 
           <HStack gap={3} vAlign="center">
             <Button
-              label={loading ? 'Đang phân tích pháp lý...' : 'Chạy Kiểm Toán Pháp Lý (AI Agent)'}
+              label={loading ? 'Đang phân tích điều khoản...' : 'Chạy Kiểm Toán Pháp Lý (Agentic RAG)'}
               variant="primary"
+              size="md"
               onClick={handleRunAudit}
             />
-            <Text type="supporting">
-              {contractText.length} ký tự — Kết nối trực tiếp Central API Gateway /contracts/audit
+            <Text type="supporting" style={{ fontSize: '12px' }}>
+              {contractText.length} ký tự • Kết nối Central API Gateway /contracts/audit
             </Text>
           </HStack>
         </VStack>
@@ -165,8 +177,8 @@ export default function ContractPlaygroundPage() {
       {/* Kết quả kiểm toán pháp lý */}
       {report && (
         <VStack gap={4}>
-          {/* Hàng thẻ tóm tắt kết quả */}
-          <HStack gap={4} wrap="wrap">
+          {/* Thẻ chỉ số rủi ro CRM Style */}
+          <HStack gap={3} wrap="wrap">
             <StackItem size="fill">
               <StatCard
                 title="Mức Độ Rủi Ro Tổng Thể"
@@ -174,10 +186,10 @@ export default function ContractPlaygroundPage() {
                   report.overallRisk === 'RED'
                     ? 'RỦI RO CAO'
                     : report.overallRisk === 'YELLOW'
-                    ? 'CẦN CHỈNH SỬA'
+                    ? 'CẦN ĐIỀU CHỈNH'
                     : 'AN TOÀN PHÁP LÝ'
                 }
-                subtitle={`Điểm đánh giá rủi ro: ${report.riskScore}/100`}
+                subtitle={`Chỉ số rủi ro: ${report.riskScore}/100`}
                 badgeLabel={report.overallRisk}
                 badgeVariant={
                   report.overallRisk === 'RED'
@@ -186,15 +198,33 @@ export default function ContractPlaygroundPage() {
                     ? 'blue'
                     : 'success'
                 }
+                progress={report.riskScore}
+                progressVariant={report.overallRisk === 'RED' ? 'warning' : 'success'}
+                trendLabel={report.overallRisk === 'RED' ? 'Cảnh báo đỏ' : 'Khả dụng'}
               />
             </StackItem>
+
             <StackItem size="fill">
               <StatCard
-                title="Số Điều Khoản Phát Hiện Bất Thường"
+                title="Số Điều Khoản Bất Thường"
                 value={`${report.findings.length} Điều Khoản`}
-                subtitle="Cần thương lượng sửa đổi trước khi đặt bút ký kết"
-                badgeLabel="PHÁT HIỆN"
+                subtitle="Cần yêu cầu bên cho thuê/sử dụng lao động sửa đổi"
+                badgeLabel="BẤY PHÁP LÝ"
                 badgeVariant="teal"
+                trendLabel="Cần đàm phán"
+              />
+            </StackItem>
+
+            <StackItem size="fill">
+              <StatCard
+                title="Căn Cứ Pháp Luật Đối Soát"
+                value="5 Bộ Luật"
+                subtitle="Dân sự, Lao động, Nhà ở, BHXH, Giao thông"
+                badgeLabel="ĐÃ ĐỐI SOÁT"
+                badgeVariant="success"
+                progress={100}
+                progressVariant="success"
+                trendLabel="100% Căn cứ"
               />
             </StackItem>
           </HStack>
@@ -202,8 +232,11 @@ export default function ContractPlaygroundPage() {
           {/* Đánh giá chung của AI */}
           <Card padding={4}>
             <VStack gap={2}>
-              <Heading level={3}>Tóm Tắt Đánh Giá Của CivicLaw Auditor Agent</Heading>
-              <Text type="body" style={{ lineHeight: '1.7' }}>
+              <HStack gap={2} vAlign="center">
+                <StatusDot variant={report.overallRisk === 'RED' ? 'warning' : 'success'} label="Tóm tắt" />
+                <Heading level={3}>Tóm Tắt Nhận Định Pháp Lý Từ CivicLaw Auditor</Heading>
+              </HStack>
+              <Text type="body" style={{ lineHeight: '1.7', fontSize: '13.5px' }}>
                 {report.summary}
               </Text>
             </VStack>
@@ -212,7 +245,10 @@ export default function ContractPlaygroundPage() {
           {/* Chi tiết từng điều khoản vi phạm */}
           <Card padding={4}>
             <VStack gap={4}>
-              <Heading level={3}>Chi Tiết Các Điều Khoản Cần Điều Chỉnh</Heading>
+              <HStack gap={2} vAlign="center">
+                <Heading level={3}>Chi Tiết Các Điều Khoản Cần Điều Chỉnh</Heading>
+                <Badge label={`${report.findings.length} phát hiện`} variant="warning" />
+              </HStack>
 
               <VStack gap={3}>
                 {report.findings.map((finding, idx) => {
@@ -222,8 +258,9 @@ export default function ContractPlaygroundPage() {
                       key={idx}
                       padding={3}
                       style={{
-                        borderLeft: isRed ? '4px solid #e53e3e' : '4px solid #dd6b20',
-                        backgroundColor: isRed ? '#fff5f5' : '#fffaf0',
+                        borderLeft: isRed ? '4px solid #ef4444' : '4px solid #f59e0b',
+                        backgroundColor: isRed ? '#fef2f2' : '#fffbeb',
+                        border: '1px solid #fecaca',
                       }}
                     >
                       <VStack gap={2}>
@@ -236,22 +273,28 @@ export default function ContractPlaygroundPage() {
                         </HStack>
 
                         <VStack gap={1}>
-                          <Text type="supporting">Phát hiện rủi ro:</Text>
-                          <Text type="body" style={{ fontWeight: 500 }}>
+                          <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                            PHÁT HIỆN RỦI RO / BẤY ĐIỀU KHOẢN:
+                          </Text>
+                          <Text type="body" style={{ fontWeight: 500, fontSize: '13.5px' }}>
                             {finding.issue}
                           </Text>
                         </VStack>
 
                         <VStack gap={1}>
-                          <Text type="supporting">Khuyến nghị điều chỉnh:</Text>
-                          <Text type="body">
+                          <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                            KHUYẾN NGHỊ ĐIỀU CHỈNH:
+                          </Text>
+                          <Text type="body" style={{ fontSize: '13.5px' }}>
                             {finding.recommendation}
                           </Text>
                         </VStack>
 
                         {finding.legalBasis && (
-                          <HStack gap={2} vAlign="center" style={{ marginTop: '4px' }}>
-                            <Text type="supporting">Căn cứ pháp lý:</Text>
+                          <HStack gap={2} vAlign="center" style={{ marginTop: '4px', borderTop: '1px dashed #e2e8f0', paddingTop: '6px' }}>
+                            <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600 }}>
+                              CĂN CỨ ĐỐI CHIẾU:
+                            </Text>
                             <Badge label={finding.legalBasis} variant="teal" />
                           </HStack>
                         )}
