@@ -57,7 +57,7 @@ async function bootstrap() {
   );
 
   // 5. Khởi tạo Gateway Server
-  const port = Number(process.env.PORT) || 3000;
+  const port = Number(process.env.PORT) || 3001;
   const server = createApiGateway({
     config: { port },
     supabaseClient: supabase,

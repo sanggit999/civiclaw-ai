@@ -24,13 +24,13 @@ async function runAudit() {
   try {
     // 1. Dashboard
     console.log('📸 1. Chụp ảnh Dashboard (/)...');
-    await page.goto('http://localhost:3001/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('http://localhost:3000/', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01-dashboard.png'), fullPage: true });
 
     // 2. Laws Browser
     console.log('📸 2. Chụp ảnh Tra cứu Kho Luật (/laws)...');
-    await page.goto('http://localhost:3001/laws', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('http://localhost:3000/laws', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02-laws-list.png'), fullPage: true });
 
@@ -53,19 +53,19 @@ async function runAudit() {
 
     // 3. Knowledge Gaps
     console.log('📸 3. Chụp ảnh Khoảng Trống Tri Thức (/gaps)...');
-    await page.goto('http://localhost:3001/gaps', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('http://localhost:3000/gaps', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03-gaps-list.png'), fullPage: true });
 
     // 4. Chat Sessions & Grounded Audit
     console.log('📸 4. Chụp ảnh Kiểm Toán Phiên AI (/sessions)...');
-    await page.goto('http://localhost:3001/sessions', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('http://localhost:3000/sessions', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04-sessions-audit.png'), fullPage: true });
 
     // 5. Contract Auditor Playground
     console.log('📸 5. Chụp ảnh Sân Thử Nghiệm Hợp Đồng (/contracts)...');
-    await page.goto('http://localhost:3001/contracts', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('http://localhost:3000/contracts', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     // Bấm nút chạy kiểm toán
     const auditBtn = page.locator('button:has-text("Chạy Kiểm Toán Pháp Lý")').first();

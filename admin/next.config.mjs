@@ -8,12 +8,12 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, '../'),
-  // Cho phép gọi API Gateway tại cổng 3000
+  // Cho phép gọi API Gateway tại cổng 3001
   async rewrites() {
     return [
       {
         source: '/api/gateway/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3000'}/api/v1/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3001'}/api/v1/:path*`,
       },
     ];
   },

@@ -41,7 +41,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       }
       endContent={
         <HStack gap={2} vAlign="center">
-          <Badge label="Gateway :3000" variant="teal" />
+          <Badge label="Gateway :3001" variant="teal" />
           <Badge label="PostgreSQL pgvector" variant="blue" />
           <Badge label="Superadmin" variant="success" />
         </HStack>
@@ -64,7 +64,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <Section padding={3} style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
           <VStack gap={2}>
             <HStack gap={2} vAlign="center">
-              <Badge label="● Gateway :3000" variant="success" />
+              <Badge label="● Gateway :3001" variant="success" />
               <Badge label="pgvector" variant="teal" />
             </HStack>
             <Text type="supporting" style={{ fontSize: '12px' }}>

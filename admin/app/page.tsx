@@ -292,7 +292,7 @@ export default function DashboardPage() {
           <StatCard
             title="Trạng Thái Central API Gateway"
             value={health?.status === 'ok' ? 'Đang Hoạt Động' : 'Chế độ Sẵn sàng'}
-            subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | HTTP Native :3000`}
+            subtitle={`Uptime: ${health?.uptimeSeconds ? Math.floor(health.uptimeSeconds) : 0}s | HTTP Native :3001`}
             badgeLabel={health?.status === 'ok' ? 'ONLINE' : 'DEGRADED'}
             badgeVariant={health?.status === 'ok' ? 'success' : 'warning'}
             trendLabel="99.9% Sẵn sàng"
@@ -409,7 +409,7 @@ export default function DashboardPage() {
             <VStack gap={3}>
               <HStack gap={2} vAlign="center">
                 <Heading level={3}>Central API Gateway Registry</Heading>
-                <Badge label="Port :3000" variant="teal" />
+                <Badge label="Port :3001" variant="teal" />
               </HStack>
               <Text type="supporting" style={{ fontSize: '13px' }}>
                 Danh sách các điểm cuối phục vụ bởi máy chủ HTTP Native với cơ chế xử lý ngắt kết nối SSE tự động.
