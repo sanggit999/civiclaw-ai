@@ -129,6 +129,15 @@ export interface ChatCitation {
   isVerified?: boolean;
 }
 
+export interface GuidedTopicItem {
+  id?: string;
+  title?: string;
+  sampleQuery?: string;
+  description?: string;
+}
+
+export type GuidedTopic = string | GuidedTopicItem;
+
 export interface ChatApiRequest {
   query: string;
   sessionId?: string;
@@ -147,7 +156,7 @@ export interface ChatApiResponse {
     isGrounded: boolean;
     confidenceScore: number;
     domain?: string;
-    guidedTopics?: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>;
+    guidedTopics?: GuidedTopic[];
     decision?: unknown;
     metadata?: Record<string, unknown>;
   };
@@ -169,7 +178,7 @@ export interface ChatPlaygroundMessage {
   isGrounded?: boolean;
   confidenceScore?: number;
   domain?: string;
-  guidedTopics?: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>;
+  guidedTopics?: GuidedTopic[];
   error?: string;
 }
 
@@ -731,7 +740,7 @@ export async function streamChatMessage(
   onToken: (token: string) => void,
   onProgress?: (step: string, message: string) => void,
   onCitations?: (citations: ChatCitation[]) => void,
-  onGuidedTopics?: (topics: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>) => void
+  onGuidedTopics?: (topics: GuidedTopic[]) => void
 ): Promise<ChatApiResponse['data']> {
   const query = request?.query?.trim();
   if (!query) {

@@ -19,6 +19,7 @@ import {
   streamChatMessage,
   ChatCitation,
   ChatPlaygroundMessage,
+  GuidedTopic,
 } from '@/lib/api-client';
 
 const DOMAIN_OPTIONS = [
@@ -231,7 +232,7 @@ export default function ChatPlaygroundPage() {
           );
         },
         // onGuidedTopics callback
-        (guidedTopics: string[]) => {
+        (guidedTopics: GuidedTopic[]) => {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMessageId
