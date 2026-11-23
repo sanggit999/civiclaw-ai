@@ -176,11 +176,17 @@ export class LegalSearchEngine {
 
   /**
    * Tìm kiếm điều luật kèm cơ chế Fallback Guard chống ảo giác
+   * Hỗ trợ cả 2 signature: search(query: SearchQuery) và search(queryText: string, options?: SearchOptions)
    */
-  public search(query: SearchQuery): SearchResponse {
-    const threshold = query.confidenceThreshold ?? this.config.defaultConfidenceThreshold;
-    const limit = query.limit ?? this.config.defaultLimit;
-    const rawText = query.text.trim();
+  public search(query: SearchQuery | string, options?: Partial<SearchQuery>): SearchResponse {
+    const queryObj: SearchQuery =
+      typeof query === 'string'
+        ? { text: query, ...options }
+        : query || { text: '' };
+
+    const threshold = queryObj.confidenceThreshold ?? this.config.defaultConfidenceThreshold;
+    const limit = queryObj.limit ?? this.config.defaultLimit;
+    const rawText = (queryObj.text || '').trim();
 
     const normalized = normalizeQueryText(rawText);
     const meaningfulWords = normalized
@@ -202,8 +208,8 @@ export class LegalSearchEngine {
     const queryBigrams = extractBigrams(meaningfulWords);
 
     // Lọc theo domain nếu có yêu cầu (So sánh không phân biệt hoa thường)
-    const candidateChunks = query.domain
-      ? this.chunks.filter((c) => c.domain.toLowerCase() === query.domain!.toLowerCase())
+    const candidateChunks = queryObj.domain
+      ? this.chunks.filter((c) => c.domain.toLowerCase() === queryObj.domain!.toLowerCase())
       : this.chunks;
 
     // Chấm điểm từng chunk

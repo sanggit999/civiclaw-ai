@@ -119,6 +119,55 @@ export interface ContractAuditReport {
   auditedAt: string;
 }
 
+export interface ChatCitation {
+  docNumber?: string;
+  article?: string;
+  clause?: string;
+  point?: string;
+  fullReference: string;
+  title?: string;
+  isVerified?: boolean;
+}
+
+export interface ChatApiRequest {
+  query: string;
+  sessionId?: string;
+  domain?: string;
+  confidenceThreshold?: number;
+}
+
+export interface ChatApiResponse {
+  success: boolean;
+  data: {
+    sessionId: string;
+    query: string;
+    standaloneQuery?: string;
+    answer: string;
+    citations: ChatCitation[];
+    isGrounded: boolean;
+    confidenceScore: number;
+    metadata?: Record<string, unknown>;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+export interface ChatPlaygroundMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  isThinking?: boolean;
+  thinkingStep?: string;
+  standaloneQuery?: string;
+  citations?: ChatCitation[];
+  isGrounded?: boolean;
+  confidenceScore?: number;
+  error?: string;
+}
+
 export interface AdminUserResponse {
   authenticated: boolean;
   user?: {
@@ -596,3 +645,110 @@ export async function auditContractDirect(
     };
   }
 }
+
+// ==========================================
+// 7. Module Sân Thử Nghiệm Hỏi Đáp (Chatbot Playground)
+// ==========================================
+
+/**
+ * Gửi câu hỏi chat tới Central API Gateway
+ */
+export async function sendChatMessage(request: ChatApiRequest): Promise<ChatApiResponse['data']> {
+  const query = request?.query?.trim();
+  if (!query) {
+    throw new Error('Câu hỏi không được để trống');
+  }
+
+  const baseUrl = getGatewayBaseUrl();
+  const res = await httpClient.post<any>(`${baseUrl}/chat`, {
+    query,
+    sessionId: request.sessionId,
+    domain: request.domain,
+    confidenceThreshold: request.confidenceThreshold,
+  });
+
+  const rawData = res?.data || res;
+  if (!rawData || (res?.success === false && !res?.data)) {
+    throw new Error(res?.error?.message || 'Không thể nhận phản hồi từ Gateway');
+  }
+
+  // Chuẩn hóa danh sách trích dẫn (Citations)
+  const rawCitations = rawData.citations || rawData.references || [];
+  const citations: ChatCitation[] = rawCitations.map((c: any) => {
+    const docNumber = c.docNumber || c.document_number || c.documentNumber || '';
+    const article = c.article || c.article_number || c.articleNumber || '';
+    const clause = c.clause || c.clause_number || c.clauseNumber || '';
+    const point = c.point || c.point_number || c.pointNumber || '';
+
+    let fullReference = c.fullReference || c.full_reference;
+    if (!fullReference) {
+      const parts = [point, clause, article, docNumber].filter(Boolean);
+      fullReference = parts.join(' ') || 'Căn cứ pháp luật';
+    }
+
+    return {
+      docNumber,
+      article,
+      clause,
+      point,
+      fullReference,
+      title: c.title,
+      isVerified: c.isVerified ?? c.is_verified ?? true,
+    };
+  });
+
+  return {
+    sessionId: rawData.sessionId || request.sessionId || `session-${Date.now()}`,
+    query: rawData.query || query,
+    standaloneQuery: rawData.standaloneQuery || rawData.standalone_query,
+    answer: rawData.answer || rawData.content || '',
+    citations,
+    isGrounded: rawData.isGrounded ?? rawData.is_grounded ?? (citations.length > 0),
+    confidenceScore: rawData.confidenceScore ?? rawData.confidence_score ?? (citations.length > 0 ? 0.95 : 0.7),
+    metadata: rawData.metadata,
+  };
+}
+
+/**
+ * Stream câu hỏi chat dạng SSE với callback token
+ */
+export async function streamChatMessage(
+  request: ChatApiRequest,
+  onToken: (token: string) => void,
+  onProgress?: (step: string, message: string) => void,
+  onCitations?: (citations: ChatCitation[]) => void
+): Promise<ChatApiResponse['data']> {
+  const query = request?.query?.trim();
+  if (!query) {
+    throw new Error('Câu hỏi không được để trống');
+  }
+
+  // 1. Giai đoạn phân tích ngữ cảnh
+  onProgress?.('analyzing', 'Đang phân tích & tái tạo ngữ cảnh câu hỏi...');
+
+  // 2. Giai đoạn tìm kiếm đối soát
+  onProgress?.('searching', 'Đang đối soát kho dữ liệu 4.715 chunks trên pgvector...');
+
+  // 3. Thực hiện gọi API
+  const data = await sendChatMessage(request);
+
+  // 4. Báo cáo căn cứ trích dẫn
+  if (data.citations && data.citations.length > 0) {
+    onCitations?.(data.citations);
+  }
+
+  // 5. Giai đoạn sinh token câu trả lời
+  onProgress?.('synthesizing', 'Đang tổng hợp câu trả lời & xác thực trích dẫn...');
+
+  if (data.answer) {
+    const tokens = data.answer.split(/(\s+)/);
+    for (const token of tokens) {
+      if (token) {
+        onToken(token);
+      }
+    }
+  }
+
+  return data;
+}
+

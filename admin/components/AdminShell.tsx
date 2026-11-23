@@ -38,6 +38,7 @@ const ROUTE_CONFIG: Record<string, { name: string }> = {
   '/laws': { name: 'Tra Cứu Kho Luật' },
   '/gaps': { name: 'Khoảng Trống Tri Thức' },
   '/contracts': { name: 'Thử Nghiệm Hợp Đồng' },
+  '/chat': { name: 'Sân Thử Nghiệm Hỏi Đáp AI (Playground)' },
   '/configs': { name: 'Cấu Hình Động Hệ Thống' },
 };
 
@@ -210,6 +211,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           href="/contracts"
           isSelected={pathname === '/contracts'}
           endContent={<Badge label="AI" variant="blue" />}
+        />
+        <SideNavItem
+          size="lg"
+          icon={<span style={{ fontSize: '18px', marginRight: '6px' }}>🤖</span>}
+          label="Trợ lý Hỏi đáp (Playground)"
+          href="/chat"
+          isSelected={pathname === '/chat'}
+          endContent={<Badge label="AI" variant="teal" />}
         />
         <SideNavItem
           size="lg"
