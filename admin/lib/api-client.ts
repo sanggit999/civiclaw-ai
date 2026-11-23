@@ -146,6 +146,9 @@ export interface ChatApiResponse {
     citations: ChatCitation[];
     isGrounded: boolean;
     confidenceScore: number;
+    domain?: string;
+    guidedTopics?: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>;
+    decision?: unknown;
     metadata?: Record<string, unknown>;
   };
   error?: {
@@ -165,6 +168,8 @@ export interface ChatPlaygroundMessage {
   citations?: ChatCitation[];
   isGrounded?: boolean;
   confidenceScore?: number;
+  domain?: string;
+  guidedTopics?: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>;
   error?: string;
 }
 
@@ -660,12 +665,18 @@ export async function sendChatMessage(request: ChatApiRequest): Promise<ChatApiR
   }
 
   const baseUrl = getGatewayBaseUrl();
-  const res = await httpClient.post<any>(`${baseUrl}/chat`, {
-    query,
-    sessionId: request.sessionId,
-    domain: request.domain,
-    confidenceThreshold: request.confidenceThreshold,
-  });
+  const res = await httpClient.post<any>(
+    `${baseUrl}/chat`,
+    {
+      query,
+      sessionId: request.sessionId,
+      domain: request.domain,
+      confidenceThreshold: request.confidenceThreshold,
+    },
+    {
+      timeoutMs: 60000, // 60s cho các tác vụ suy luận Agentic LLM sâu
+    }
+  );
 
   const rawData = res?.data || res;
   if (!rawData || (res?.success === false && !res?.data)) {
@@ -705,6 +716,9 @@ export async function sendChatMessage(request: ChatApiRequest): Promise<ChatApiR
     citations,
     isGrounded: rawData.isGrounded ?? rawData.is_grounded ?? (citations.length > 0),
     confidenceScore: rawData.confidenceScore ?? rawData.confidence_score ?? (citations.length > 0 ? 0.95 : 0.7),
+    domain: rawData.domain,
+    guidedTopics: rawData.guidedTopics || rawData.guided_topics || [],
+    decision: rawData.decision,
     metadata: rawData.metadata,
   };
 }
@@ -716,7 +730,8 @@ export async function streamChatMessage(
   request: ChatApiRequest,
   onToken: (token: string) => void,
   onProgress?: (step: string, message: string) => void,
-  onCitations?: (citations: ChatCitation[]) => void
+  onCitations?: (citations: ChatCitation[]) => void,
+  onGuidedTopics?: (topics: Array<string | { id?: string; title?: string; sampleQuery?: string; description?: string }>) => void
 ): Promise<ChatApiResponse['data']> {
   const query = request?.query?.trim();
   if (!query) {
@@ -737,7 +752,12 @@ export async function streamChatMessage(
     onCitations?.(data.citations);
   }
 
-  // 5. Giai đoạn sinh token câu trả lời
+  // 5. Báo cáo các chủ đề định hướng nếu có
+  if (data.guidedTopics && data.guidedTopics.length > 0) {
+    onGuidedTopics?.(data.guidedTopics);
+  }
+
+  // 6. Giai đoạn sinh token câu trả lời
   onProgress?.('synthesizing', 'Đang tổng hợp câu trả lời & xác thực trích dẫn...');
 
   if (data.answer) {

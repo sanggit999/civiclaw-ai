@@ -14,6 +14,7 @@ import {
   StackItem,
 } from '@astryxdesign/core';
 import { PageContainer } from '@/components/PageContainer';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import {
   streamChatMessage,
   ChatCitation,
@@ -72,10 +73,15 @@ function generateSessionId(): string {
 export default function ChatPlaygroundPage() {
   const [, startTransition] = useTransition();
 
-  // Session & Inspector Parameters
-  const [sessionId, setSessionId] = useState<string>(() => generateSessionId());
+  // Session & Inspector Parameters - Khởi tạo giá trị cố định để khớp SSR, sau đó cập nhật trên Client
+  const [sessionId, setSessionId] = useState<string>('session-playground');
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.85);
+
+  // Sinh Session ID ngẫu nhiên duy nhất trên Client sau khi Component đã mount
+  useEffect(() => {
+    setSessionId(generateSessionId());
+  }, []);
 
   // Messages & Chat state
   const [messages, setMessages] = useState<ChatPlaygroundMessage[]>([
@@ -84,7 +90,7 @@ export default function ChatPlaygroundPage() {
       role: 'assistant',
       content:
         'Xin chào Quản trị viên! Đây là Sân Thử Nghiệm Hỏi Đáp Pháp Lý AI (Chatbot Playground).\n\nBạn có thể nhập câu hỏi thực tế hoặc bấm chọn các câu hỏi mẫu bên dưới để kiểm chứng trực quan phản xạ của AI: quy trình suy luận (Reasoning Pulse), sinh câu trả lời theo thời gian thực và đối soát căn cứ trích dẫn chính thống từ 5 bộ luật.',
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: 'Sẵn sàng',
       isGrounded: true,
       confidenceScore: 1.0,
       citations: [
@@ -174,7 +180,7 @@ export default function ChatPlaygroundPage() {
     try {
       let accumulatedAnswer = '';
 
-      await streamChatMessage(
+      const resultData = await streamChatMessage(
         {
           query,
           sessionId,
@@ -223,8 +229,34 @@ export default function ChatPlaygroundPage() {
                 : msg
             )
           );
+        },
+        // onGuidedTopics callback
+        (guidedTopics: string[]) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMessageId
+                ? {
+                    ...msg,
+                    guidedTopics,
+                  }
+                : msg
+            )
+          );
         }
       );
+
+      if (resultData?.guidedTopics && resultData.guidedTopics.length > 0) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === botMessageId
+              ? {
+                  ...msg,
+                  guidedTopics: resultData.guidedTopics,
+                }
+              : msg
+          )
+        );
+      }
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Lỗi kết nối tới Gateway API. Vui lòng kiểm tra cổng 3001.';
@@ -495,7 +527,7 @@ export default function ChatPlaygroundPage() {
                       fontSize: '13.5px',
                       lineHeight: '1.6',
                       wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
+                      whiteSpace: isUser ? 'pre-wrap' : 'normal',
                     }}
                   >
                     {/* Trạng thái Thinking Pulse */}
@@ -532,8 +564,15 @@ export default function ChatPlaygroundPage() {
                           variant="success"
                         />
                       </VStack>
-                    ) : (
+                    ) : isUser ? (
                       <div>{msg.content}</div>
+                    ) : (
+                      <MarkdownContent
+                        content={msg.content}
+                        guidedTopics={msg.guidedTopics}
+                        onSelectTopic={(topic) => handleSendMessage(topic)}
+                        isLoading={isLoading}
+                      />
                     )}
 
                     {/* Danh sách căn cứ trích dẫn nguồn luật */}

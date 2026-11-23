@@ -45,10 +45,11 @@ export function resolveRouteAccess(
   token: string | null,
   config: AdminAuthConfig = DEFAULT_AUTH_CONFIG
 ): RouteAccessDecision {
-  // Cho phép bỏ qua các tài nguyên tĩnh và API xác thực
+  // Cho phép bỏ qua các tài nguyên tĩnh, API xác thực và Gateway proxy
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/gateway') ||
     pathname === '/favicon.ico' ||
     pathname.endsWith('.css') ||
     pathname.endsWith('.js') ||

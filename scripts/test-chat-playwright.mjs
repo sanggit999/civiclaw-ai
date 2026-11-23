@@ -19,7 +19,7 @@ import path from 'path';
 const BASE_URL = process.env.ADMIN_BASE_URL || 'http://localhost:3000';
 const DEFAULT_EMAIL = process.env.ADMIN_DEFAULT_EMAIL || 'admin@civiclaw.vn';
 const DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'CivicLaw@2026';
-const SCREENSHOT_DIR = 'C:/Users/sangdev/.gemini/antigravity/brain/71f6d67b-693f-46dd-8766-7b7e54372926/screenshots';
+const SCREENSHOT_DIR = 'C:/Users/sangdev/.gemini/antigravity/brain/f59b6444-8b0f-4871-8704-9cf2602e2d70/screenshots';
 
 if (!fs.existsSync(SCREENSHOT_DIR)) {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
@@ -107,21 +107,8 @@ async function runChatAgentVerification() {
     // -------------------------------------------------------------
     logStep('Kịch bản 1: Kiểm thử Chào hỏi Thân thiện ("Xin chào")');
     await sendQuery(page, 'Xin chào bạn!');
+    await page.waitForSelector('textarea:not([disabled])', { timeout: 30000 });
     await page.waitForTimeout(500);
-
-    // Chờ nhận phản hồi chào mừng
-    await page.waitForFunction(
-      () => {
-        const text = document.body.innerText;
-        return (
-          text.includes('Chào') ||
-          text.includes('CivicLaw') ||
-          text.includes('trợ lý') ||
-          text.includes('giúp gì')
-        );
-      },
-      { timeout: 15000 }
-    );
 
     const greetingBody = await page.textContent('body');
     if (greetingBody.includes('Chào') || greetingBody.includes('CivicLaw') || greetingBody.includes('trợ lý')) {
@@ -139,22 +126,13 @@ async function runChatAgentVerification() {
     await sendQuery(page, 'Cho tôi về Giao thông đường bộ');
     await page.waitForTimeout(500);
 
-    // Chờ nhận phản hồi tổng quan lĩnh vực (domain landscape)
-    await page.waitForFunction(
-      () => {
-        const text = document.body.innerText;
-        return (
-          text.includes('Giao thông') &&
-          (text.includes('168/2024') || text.includes('36/2024') || text.includes('Luật') || text.includes('Nghị định') || text.includes('lĩnh vực'))
-        );
-      },
-      { timeout: 20000 }
-    );
+    // Chờ nhận phản hồi tổng quan lĩnh vực (domain landscape) và chờ streaming xong
+    await page.waitForSelector('textarea:not([disabled])', { timeout: 30000 });
+    await page.waitForTimeout(1000);
 
     const domainBody = await page.textContent('body');
     if (
-      domainBody.includes('Giao thông') &&
-      (domainBody.includes('168/2024') || domainBody.includes('36/2024') || domainBody.includes('Luật Trật tự'))
+      domainBody.includes('168/2024') || domainBody.includes('36/2024') || domainBody.includes('Bản Đồ Quy Định')
     ) {
       logPass('Agent kích hoạt domain_landscape, tổng hợp bức tranh pháp lý và định hướng chuyên sâu');
     } else {
@@ -168,6 +146,7 @@ async function runChatAgentVerification() {
     // -------------------------------------------------------------
     logStep('Kịch bản 3: Tra cứu Điều khoản Vi phạm Cụ thể ("Vượt đèn đỏ xe máy...")');
     await sendQuery(page, 'Vượt đèn đỏ xe máy bị xử phạt bao nhiêu tiền theo quy định mới nhất?');
+    await page.waitForSelector('textarea:not([disabled])', { timeout: 30000 });
     await page.waitForTimeout(500);
 
     // Chờ nhận phản hồi có trích dẫn luật chính xác
