@@ -24,7 +24,13 @@ Hiện tại CivicLaw AI chưa có dữ liệu chính thức về vấn đề B�
   extractiveFallbackNotice: `⚠️ THÔNG BÁO TỰ ĐỘNG:
 Hệ thống xử lý ngôn ngữ tự nhiên đang tạm thời gián đoạn (quá tải hạn mức hoặc bảo trì kết nối AI).
 Để không làm gián đoạn việc tra cứu, CivicLaw AI đã tự động chuyển sang chế độ TRÍCH XUẤT NGUYÊN VĂN TỪ CƠ SỞ DỮ LIỆU PHÁP LUẬT CHÍNH THỨC:`,
+  maintenanceMessage: `🔧 THÔNG BÁO VẬN HÀNH HỆ THỐNG:
+Hệ thống Trợ lý Pháp lý CivicLaw AI hiện đang trong phiên bảo trì định kỳ để tối ưu hóa và cập nhật dữ liệu quy phạm pháp luật mới nhất.
+
+Quý công dân vui lòng thử lại sau ít phút hoặc tạo phiên hội thoại mới. Xin chân thành cảm ơn sự thông cảm của Quý vị!`,
 };
+
+export const DEFAULT_MAINTENANCE_MESSAGE = DEFAULT_RAG_CONFIG.maintenanceMessage!;
 
 /**
  * Định dạng danh sách chunks thành văn bản ngữ cảnh rõ ràng kèm trích dẫn

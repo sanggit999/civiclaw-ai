@@ -1,7 +1,6 @@
 import { LegalChunk } from '../ingestion/types.js';
 import { KnowledgeGapQueue, normalizeQueryText, removeVietnameseDiacritics } from './gap-queue.js';
 import { SearchEngineConfig, SearchQuery, SearchResponse, SearchResultItem } from './types.js';
-import { expandLegalQuery } from './synonyms.js';
 
 /**
  * Cấu hình tham số và trọng số chấm điểm mặc định của bộ máy tìm kiếm
@@ -190,13 +189,13 @@ export class LegalSearchEngine {
     const rawText = (queryObj.text || '').trim();
 
     // BỘ LỌC KIỂM TRA DỮ LIỆU ĐẦU VÀO (INPUT VALIDATION GUARD)
-    // Chặn câu hỏi rỗng hoặc ngắn hơn minQueryLength trước khi mở rộng từ đồng nghĩa
-    const initialNormalized = normalizeQueryText(rawText);
-    const initialWords = initialNormalized
+    // Chặn câu hỏi rỗng hoặc ngắn hơn minQueryLength, không ghi rác vào Knowledge Gap Queue
+    const normalized = normalizeQueryText(rawText);
+    const meaningfulWords = normalized
       .split(' ')
       .filter((w) => w.length >= 2 && !this.stopWords.has(w));
 
-    if (!rawText || rawText.length < this.config.minQueryLength || initialWords.length === 0) {
+    if (!rawText || rawText.length < this.config.minQueryLength || meaningfulWords.length === 0) {
       return {
         isFound: false,
         topScore: 0,
@@ -205,13 +204,6 @@ export class LegalSearchEngine {
         loggedToKnowledgeGap: false,
       };
     }
-
-    // Mở rộng từ đồng nghĩa pháp lý cho ngôn ngữ đời thường của công dân (vượt đèn đỏ -> đèn tín hiệu, xe máy -> xe mô tô...)
-    const { expandedText } = expandLegalQuery(rawText);
-    const normalized = normalizeQueryText(expandedText);
-    const meaningfulWords = normalized
-      .split(' ')
-      .filter((w) => w.length >= 2 && !this.stopWords.has(w));
 
     const queryBigrams = extractBigrams(meaningfulWords);
 

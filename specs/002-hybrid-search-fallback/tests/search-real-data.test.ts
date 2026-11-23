@@ -50,46 +50,6 @@ describe('Real Data Search & Fallback Verification (4.501 chunks)', () => {
     expect(res.loggedToKnowledgeGap).toBe(false);
   });
 
-  it('phải ánh xạ khẩu ngữ "Vượt đèn đỏ xe máy" sang Điều 7 Nghị định 168/2024/NĐ-CP', () => {
-    const res = engine.search({
-      text: 'Vượt đèn đỏ xe máy bị xử phạt bao nhiêu tiền theo quy định mới nhất?',
-    });
-
-    expect(res.isFound).toBe(true);
-    expect(res.topScore).toBeGreaterThanOrEqual(0.65);
-    expect(res.results.length).toBeGreaterThan(0);
-    expect(res.results[0].chunk.fullReference).toBe(
-      'Điểm c Khoản 7 Điều 7 Nghị định 168/2024/NĐ-CP'
-    );
-    expect(res.results[0].chunk.content).toContain('4.000.000 đồng đến 6.000.000 đồng');
-    expect(res.results[0].chunk.content).toContain('Không chấp hành hiệu lệnh của đèn tín hiệu giao thông');
-    expect(res.loggedToKnowledgeGap).toBe(false);
-  });
-
-  it('phải ánh xạ khẩu ngữ "Uống rượu lái xe ô tô" sang Điều 6 Nghị định 168/2024/NĐ-CP', () => {
-    const res = engine.search({
-      text: 'Uống rượu lái xe ô tô bị phạt bao nhiêu tiền?',
-    });
-
-    expect(res.isFound).toBe(true);
-    expect(res.topScore).toBeGreaterThanOrEqual(0.65);
-    expect(res.results.length).toBeGreaterThan(0);
-    expect(res.results[0].chunk.content).toContain('nồng độ cồn');
-    expect(res.loggedToKnowledgeGap).toBe(false);
-  });
-
-  it('phải ánh xạ khẩu ngữ "Lương thử việc" sang Điều 26 Bộ luật Lao động 2019', () => {
-    const res = engine.search({
-      text: 'Lương thử việc được nhận tối thiểu bao nhiêu phần trăm?',
-    });
-
-    expect(res.isFound).toBe(true);
-    expect(res.topScore).toBeGreaterThanOrEqual(0.65);
-    expect(res.results.length).toBeGreaterThan(0);
-    expect(res.results[0].chunk.fullReference).toContain('Điều 26 Bộ luật Lao động 2019');
-    expect(res.loggedToKnowledgeGap).toBe(false);
-  });
-
   it('phải từ chối trả lời và ghi nhận vào Knowledge Gap Queue khi hỏi luật ngoài phạm vi (Luật Đất đai / Xuất nhập cảnh)', () => {
     const res = engine.search({
       text: 'thủ tục cấp hộ chiếu và thị thực xuất cảnh cho người nước ngoài',

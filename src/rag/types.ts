@@ -74,6 +74,7 @@ export interface RagQueryResponse {
   fallbackTriggered: boolean;
   unverifiedCitations?: string[];
   degradedMode?: boolean; // true nếu LLM gặp sự cố và hệ thống fallback sang trích xuất trực tiếp DB
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -113,4 +114,5 @@ export interface RagPipelineConfig {
   systemPrompt: string;
   fallbackMessage: string;
   extractiveFallbackNotice: string;     // Thông báo khi kích hoạt chế độ trích xuất trực tiếp DB
+  maintenanceMessage?: string;          // Thông báo UX chuẩn mực khi hệ thống bảo trì / mất kết nối
 }
