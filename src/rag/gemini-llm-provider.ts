@@ -10,6 +10,7 @@ export interface GeminiConfig {
 
 export const DEFAULT_GEMINI_CONFIG = {
   modelName: 'gemini-3.8-flash',
+  fallbackModel: 'gemini-3.5-flash',
   apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
   timeoutMs: 20000, // 20 giây timeout để bảo đảm trải nghiệm người dùng
 };
@@ -77,6 +78,24 @@ export class GeminiLlmProvider implements ILlmProvider {
         body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
+
+      // Nếu model chính gặp 503 (quá tải) hoặc 404 (model deprecated), tự động thử fallback model
+      if (!response.ok && (response.status === 503 || response.status === 404) && this.modelName !== DEFAULT_GEMINI_CONFIG.fallbackModel) {
+        console.warn(`[GeminiLlmProvider] Model ${this.modelName} trả về HTTP ${response.status}. Tự động chuyển đổi dự phòng sang ${DEFAULT_GEMINI_CONFIG.fallbackModel}...`);
+        const fallbackUrl = `${this.apiEndpoint}/${DEFAULT_GEMINI_CONFIG.fallbackModel}:generateContent?key=${this.apiKey}`;
+        const fallbackRes = await this.fetchFn(fallbackUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': this.apiKey,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        if (fallbackRes.ok) {
+          response = fallbackRes;
+        }
+      }
     } catch (err: any) {
       if (err.name === 'AbortError') {
         throw new Error(`Gemini API Timeout: Quá thời gian chờ phản hồi (${this.timeoutMs}ms)`);

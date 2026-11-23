@@ -1,7 +1,13 @@
 import 'dotenv/config';
 import { getSupabaseClient } from '../dist/storage/supabase-client.js';
 import { LegalSearchEngine } from '../dist/search/engine.js';
-import { GroundedRagPipeline } from '../dist/rag/pipeline.js';
+import {
+  GroundedRagPipeline,
+  createRetrieverFromSearchEngine,
+  createGapRecorderFromQueue,
+} from '../dist/rag/pipeline.js';
+import { GeminiLlmProvider } from '../dist/rag/gemini-llm-provider.js';
+import { RegexCitationVerifier } from '../dist/rag/citation-verifier.js';
 import { ContextualRagPipeline } from '../dist/session/pipeline.js';
 import { SupabaseSessionStore } from '../dist/session/supabase-session-store.js';
 import { InMemorySessionStore } from '../dist/session/in-memory-session-store.js';
@@ -48,8 +54,21 @@ async function bootstrap() {
   const lifecycleManager = new ContractLifecycleManager({ versionStore });
 
   // 4. Thiết lập RAG Pipeline & Contextual Pipeline
-  const ragPipeline = new GroundedRagPipeline(searchEngine);
-  const condenser = new RuleAndLlmQueryCondenser();
+  const retriever = createRetrieverFromSearchEngine(searchEngine);
+  const gapRecorder = createGapRecorderFromQueue(searchEngine.getGapQueue());
+  const llmProvider = new GeminiLlmProvider({
+    apiKey: process.env.GEMINI_API_KEY,
+    modelName: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  });
+  const citationVerifier = new RegexCitationVerifier();
+
+  const ragPipeline = new GroundedRagPipeline(
+    retriever,
+    gapRecorder,
+    llmProvider,
+    citationVerifier
+  );
+  const condenser = new RuleAndLlmQueryCondenser(llmProvider);
   const contextualPipeline = new ContextualRagPipeline(
     sessionStore,
     condenser,
