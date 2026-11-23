@@ -9,6 +9,7 @@ import {
 import { GeminiLlmProvider } from '../dist/rag/gemini-llm-provider.js';
 import { RegexCitationVerifier } from '../dist/rag/citation-verifier.js';
 import { ContextualRagPipeline } from '../dist/session/pipeline.js';
+import { CivicLawAgent } from '../dist/agent/civic-law-agent.js';
 import { SupabaseSessionStore } from '../dist/session/supabase-session-store.js';
 import { InMemorySessionStore } from '../dist/session/in-memory-session-store.js';
 import { RuleAndLlmQueryCondenser } from '../dist/session/query-condenser.js';
@@ -53,7 +54,7 @@ async function bootstrap() {
 
   const lifecycleManager = new ContractLifecycleManager({ versionStore });
 
-  // 4. Thiết lập RAG Pipeline & Contextual Pipeline
+  // 4. Thiết lập RAG Pipeline & Contextual Pipeline & CivicLaw Legal Agent
   const retriever = createRetrieverFromSearchEngine(searchEngine);
   const gapRecorder = createGapRecorderFromQueue(searchEngine.getGapQueue());
   const llmProvider = new GeminiLlmProvider({
@@ -69,10 +70,26 @@ async function bootstrap() {
     citationVerifier
   );
   const condenser = new RuleAndLlmQueryCondenser(llmProvider);
+
+  // Khởi tạo CivicLawAgent với đầy đủ dependencies (RAG pipeline, LLM, search engine)
+  const civicLawAgent = new CivicLawAgent(
+    {
+      enableExploratoryLandscape: true,
+      confidenceThreshold: 0.65,
+    },
+    {
+      ragPipeline,
+      llmProvider,
+      searchEngine,
+    }
+  );
+
   const contextualPipeline = new ContextualRagPipeline(
     sessionStore,
     condenser,
-    ragPipeline
+    ragPipeline,
+    undefined,
+    civicLawAgent
   );
 
   // 5. Khởi tạo Gateway Server

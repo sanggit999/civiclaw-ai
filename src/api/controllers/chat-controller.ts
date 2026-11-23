@@ -79,6 +79,11 @@ export class ChatController {
       // 3. Phát danh sách trích dẫn căn cứ pháp luật
       sse.sendEvent('citations', result.citations);
 
+      // Phát danh sách chủ đề định hướng tương tác nếu có
+      if (result.guidedTopics && result.guidedTopics.length > 0) {
+        sse.sendEvent('guided_topics', result.guidedTopics);
+      }
+
       // 4. Stream từng phần câu trả lời (token streaming mô phỏng câu trả lời hoàn chỉnh)
       const answer = result.answer;
       // Chia thành các chunks nhỏ (khoảng 20 ký tự) để mô phỏng streaming mượt mà ra giao diện
@@ -97,8 +102,12 @@ export class ChatController {
         sessionId: result.sessionId,
         isGrounded: result.isGrounded,
         confidenceScore: result.confidenceScore,
+        domain: (result as any).domain,
+        guidedTopics: (result as any).guidedTopics,
+        decision: (result as any).decision,
         metadata: {
           timestamp: new Date().toISOString(),
+          ...((result as any).metadata || {}),
         },
       });
 

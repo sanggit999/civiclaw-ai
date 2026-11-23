@@ -1,6 +1,8 @@
 import { IRagPipeline } from '../rag/types.js';
 import { DEFAULT_MAINTENANCE_MESSAGE } from '../rag/prompt-builder.js';
 import { classifyIntent } from './intent-router.js';
+import { CivicLawAgent } from '../agent/civic-law-agent.js';
+import { CivicLawAgentResponse } from '../agent/types.js';
 import {
   ISessionStore,
   IQueryCondenser,
@@ -12,25 +14,36 @@ import {
 
 export interface IContextualRagPipeline {
   chat(request: ContextualRagRequest): Promise<ContextualRagResponse>;
+  getAgent?(): CivicLawAgent;
 }
 
 /**
  * Pipeline RAG Đa Lượt có Bộ nhớ Ngữ cảnh & Phiên Hội Thoại (ContextualRagPipeline)
- * Điều phối luồng làm rõ câu hỏi trước khi gửi vào RAG Core và lưu trữ lịch sử
+ * Điều phối luồng làm rõ câu hỏi trước khi gửi vào CivicLaw Legal Agent và lưu trữ lịch sử
  */
 export class ContextualRagPipeline implements IContextualRagPipeline {
   private config: SessionConfig;
+  private agent: CivicLawAgent;
 
   constructor(
     private sessionStore: ISessionStore,
     private condenser: IQueryCondenser,
     private ragPipeline: IRagPipeline,
-    customConfig?: Partial<SessionConfig>
+    customConfig?: Partial<SessionConfig>,
+    agent?: CivicLawAgent
   ) {
     this.config = {
       ...DEFAULT_SESSION_CONFIG,
       ...customConfig,
     };
+    this.agent = agent ?? new CivicLawAgent(undefined, { ragPipeline: this.ragPipeline });
+  }
+
+  /**
+   * Truy xuất instance của CivicLawAgent nội bộ
+   */
+  getAgent(): CivicLawAgent {
+    return this.agent;
   }
 
   /**
@@ -124,16 +137,38 @@ export class ContextualRagPipeline implements IContextualRagPipeline {
       // Ignored non-fatal logging error
     }
 
-    // 6. Chuyển câu hỏi độc lập vào Grounded RAG Pipeline để tìm kiếm luật và tổng hợp (kèm Maintenance Guard)
-    let ragResponse;
+    // 6. Chuyển câu hỏi độc lập vào CivicLaw Legal Agent để định tuyến suy luận Bounded ReAct (kèm Maintenance Guard)
+    let agentResponse: CivicLawAgentResponse;
     try {
-      ragResponse = await this.ragPipeline.query({
+      agentResponse = await this.agent.process({
         query: standaloneQuery,
         domain,
         confidenceThreshold,
+        sessionId: effectiveSessionId,
       });
     } catch (err) {
-      console.warn('[ContextualRagPipeline] Lỗi truy vấn RAG, trả về thông báo bảo trì UX:', err);
+      console.warn('[ContextualRagPipeline] Lỗi xử lý Agent / RAG, trả về thông báo bảo trì UX:', err);
+      return {
+        sessionId: effectiveSessionId,
+        standaloneQuery: standaloneQuery || query,
+        isCondensed,
+        answer: DEFAULT_MAINTENANCE_MESSAGE,
+        citations: [],
+        verifiedSources: [],
+        isGrounded: false,
+        confidenceScore: 0,
+        fallbackTriggered: true,
+        metadata: {
+          systemState: 'MAINTENANCE',
+        },
+      };
+    }
+
+    // Nếu Agent gặp sự cố hạ tầng / lỗi công cụ bên dưới, trả về thông điệp bảo trì UX chuẩn
+    if (
+      agentResponse.fallbackTriggered &&
+      (agentResponse.answer.includes('Hệ thống gặp sự cố') || agentResponse.metadata?.systemState === 'MAINTENANCE')
+    ) {
       return {
         sessionId: effectiveSessionId,
         standaloneQuery: standaloneQuery || query,
@@ -155,16 +190,16 @@ export class ContextualRagPipeline implements IContextualRagPipeline {
       await this.sessionStore.appendMessage({
         sessionId: effectiveSessionId,
         role: 'assistant',
-        content: ragResponse.answer,
-        citations: ragResponse.citations,
-        isGrounded: ragResponse.isGrounded,
+        content: agentResponse.answer,
+        citations: agentResponse.citations,
+        isGrounded: agentResponse.isGrounded,
       });
     } catch {
       // Ignored non-fatal logging error
     }
 
     return {
-      ...ragResponse,
+      ...agentResponse,
       sessionId: effectiveSessionId,
       standaloneQuery,
       isCondensed,

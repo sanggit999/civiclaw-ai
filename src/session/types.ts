@@ -1,4 +1,5 @@
 import { GroundedCitation, RagQueryResponse } from '../rag/types.js';
+import { AgentDecision, GuidedTopic, LegalDomain } from '../agent/types.js';
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
@@ -59,12 +60,16 @@ export interface ContextualRagRequest {
 }
 
 /**
- * Phản hồi RAG đa lượt kèm thông tin phiên và câu hỏi độc lập
+ * Phản hồi RAG đa lượt kèm thông tin phiên, câu hỏi độc lập và định tuyến suy luận Agent
  */
 export interface ContextualRagResponse extends RagQueryResponse {
   sessionId: string;
   standaloneQuery: string;
   isCondensed: boolean;
+  domain?: LegalDomain;
+  guidedTopics?: GuidedTopic[];
+  decision?: AgentDecision;
+  thoughtTrace?: string[];
 }
 
 /**
