@@ -90,7 +90,10 @@ describe('BDD Scenarios: Multi-turn Legal Dialogue & Chat Session Memory (Slice 
     mockLlm.setCannedResponse('xe máy', 'Theo Điểm đ Khoản 3 Điều 6 Nghị định 168/2024/NĐ-CP, xe máy vượt đèn đỏ phạt 400.000 đến 600.000đ.');
     mockLlm.setCannedResponse('ô tô', 'Theo Điểm a Khoản 5 Điều 6 Nghị định 168/2024/NĐ-CP, ô tô vượt đèn đỏ phạt 4.000.000 đến 6.000.000đ.');
 
-    const { pipeline, sessionStore } = createPipeline(mockLlm);
+    const condenserLlm = new MockLlmProvider();
+    condenserLlm.setCannedResponse('ô tô', 'Hành vi vượt đèn đỏ đối với xe ô tô bị xử phạt bao nhiêu tiền?');
+
+    const { pipeline, sessionStore } = createPipeline(mockLlm, undefined, condenserLlm);
     const session = await sessionStore.createSession();
 
     // Lượt 1

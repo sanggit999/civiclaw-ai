@@ -35,7 +35,12 @@ describe('Contextual Multi-turn RAG Pipeline (Slice 3)', () => {
 
   it('xử lý luồng hội thoại 2 lượt: Lượt 1 hỏi gốc, Lượt 2 hỏi tiếp nối tỉnh lược', async () => {
     const sessionStore = new InMemorySessionStore();
-    const condenser = new RuleAndLlmQueryCondenser(); // Heuristic offline condenser
+    const condenserLlm = new MockLlmProvider();
+    condenserLlm.setCannedResponse(
+      'ô tô',
+      'Hành vi vượt đèn đỏ đối với xe ô tô bị xử phạt bao nhiêu tiền?'
+    );
+    const condenser = new RuleAndLlmQueryCondenser(condenserLlm); // Pure LLM-only condenser
     const mockLlm = new MockLlmProvider();
     const verifier = new RegexCitationVerifier();
 

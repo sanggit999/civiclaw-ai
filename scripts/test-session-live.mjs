@@ -40,7 +40,7 @@ async function testLiveSession() {
   const ragCore = new GroundedRagPipeline(retriever, gapRecorder, llmProvider, verifier);
 
   const sessionStore = new InMemorySessionStore();
-  const condenser = new RuleAndLlmQueryCondenser(); // Heuristic rewriter siêu tốc
+  const condenser = new RuleAndLlmQueryCondenser(llmProvider); // Pure LLM-only contextual rewriter
   const pipeline = new ContextualRagPipeline(sessionStore, condenser, ragCore);
 
   const session = await sessionStore.createSession('Phiên tư vấn đa lượt thực tế');

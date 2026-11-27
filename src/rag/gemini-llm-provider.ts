@@ -3,6 +3,7 @@ import { ILlmProvider, LlmGenerateOptions, LlmGenerateResult } from './types.js'
 export interface GeminiConfig {
   apiKey?: string;
   modelName?: string;
+  fallbackModel?: string;
   apiEndpoint?: string;
   timeoutMs?: number;
   fetchFn?: typeof fetch;
@@ -22,6 +23,7 @@ export const DEFAULT_GEMINI_CONFIG = {
 export class GeminiLlmProvider implements ILlmProvider {
   private apiKey: string;
   private modelName: string;
+  private fallbackModel: string;
   private apiEndpoint: string;
   private timeoutMs: number;
   private fetchFn: typeof fetch;
@@ -29,6 +31,8 @@ export class GeminiLlmProvider implements ILlmProvider {
   constructor(config?: GeminiConfig) {
     this.apiKey = config?.apiKey || process.env.GEMINI_API_KEY || '';
     this.modelName = config?.modelName || DEFAULT_GEMINI_CONFIG.modelName;
+    this.fallbackModel =
+      config?.fallbackModel || process.env.GEMINI_FALLBACK_MODEL || DEFAULT_GEMINI_CONFIG.fallbackModel;
     this.apiEndpoint = config?.apiEndpoint || DEFAULT_GEMINI_CONFIG.apiEndpoint;
     this.timeoutMs = config?.timeoutMs || DEFAULT_GEMINI_CONFIG.timeoutMs;
     this.fetchFn = config?.fetchFn || globalThis.fetch;
@@ -79,10 +83,14 @@ export class GeminiLlmProvider implements ILlmProvider {
         signal: controller.signal,
       });
 
-      // Nếu model chính gặp 503 (quá tải) hoặc 404 (model deprecated), tự động thử fallback model
-      if (!response.ok && (response.status === 503 || response.status === 404) && this.modelName !== DEFAULT_GEMINI_CONFIG.fallbackModel) {
-        console.warn(`[GeminiLlmProvider] Model ${this.modelName} trả về HTTP ${response.status}. Tự động chuyển đổi dự phòng sang ${DEFAULT_GEMINI_CONFIG.fallbackModel}...`);
-        const fallbackUrl = `${this.apiEndpoint}/${DEFAULT_GEMINI_CONFIG.fallbackModel}:generateContent?key=${this.apiKey}`;
+      // Nếu model chính gặp 429 (hết free quota theo model), 503 (quá tải) hoặc 404, tự động chuyển sang fallback model
+      if (
+        !response.ok &&
+        (response.status === 429 || response.status === 503 || response.status === 404) &&
+        this.modelName !== this.fallbackModel
+      ) {
+        console.warn(`[GeminiLlmProvider] Model ${this.modelName} trả về HTTP ${response.status}. Tự động chuyển đổi dự phòng sang ${this.fallbackModel}...`);
+        const fallbackUrl = `${this.apiEndpoint}/${this.fallbackModel}:generateContent?key=${this.apiKey}`;
         const fallbackRes = await this.fetchFn(fallbackUrl, {
           method: 'POST',
           headers: {
@@ -93,6 +101,8 @@ export class GeminiLlmProvider implements ILlmProvider {
           signal: controller.signal,
         });
         if (fallbackRes.ok) {
+          response = fallbackRes;
+        } else {
           response = fallbackRes;
         }
       }

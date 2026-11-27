@@ -71,9 +71,7 @@
 ## 4. Làm Rõ & Ràng Buộc Nghiệp Vụ (Clarify - Cấm Đoán Mò)
 
 - [x] **Q1: Tái tạo câu hỏi (Query Rewriting) có làm tăng độ trễ (latency) và chi phí token không?**
-  - *Trả lời:* Áp dụng chiến lược 2 tầng (Two-Tier Query Condensation):
-    - Tầng 1 (Rule-based Heuristics): Quét nhanh bằng regex các mẫu câu nối tiếng Việt phổ biến (*"thế còn...", "còn xe...", "lỗi đó...", "trường hợp này..."*). Nếu câu hỏi độc lập đủ chủ vị và danh từ pháp lý, bỏ qua bước gọi LLM để có tốc độ < 1ms.
-    - Tầng 2 (LLM Prompt Condensation): Chỉ kích hoạt khi phát hiện đại từ chỉ định hoặc câu ngắn dưới 6 từ mà có lịch sử hội thoại trước đó.
+  - *Trả lời (Cập nhật Spec 016 — Pure LLM-only):* Bỏ qua bước gọi LLM ở lượt đầu tiên (`history.length === 0`). Từ lượt 2 trở đi khi có lịch sử, giao hoàn toàn cho LLM tái tạo ngữ cảnh (hoặc nhận diện Topic Shift giữ nguyên câu mới) mà không dùng regex heuristic cứng để tránh lỗi false-positive tiếng Việt. Khi mất LLM / hết quota `429`, giữ nguyên câu hỏi gốc an toàn.
 - [x] **Q2: Cơ sở dữ liệu Supabase cần lưu những bảng nào?**
   - *Trả lời:*
     - Bảng `public.chat_sessions`: `id (uuid)`, `user_id (uuid, nullable)`, `title (text)`, `created_at`, `updated_at`.

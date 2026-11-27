@@ -87,7 +87,20 @@ export class GroundedRagPipeline implements IRagPipeline {
     // =========================================================================
     // LỚP 2: Tạo Prompt ràng buộc căn cứ chặt chẽ (Strict Grounding Prompt)
     // =========================================================================
-    const promptData = buildGroundedPrompt(request.query, contextChunks, this.config);
+    const conversationalCtx =
+      request.persona || request.rawUserQuery || request.history
+        ? {
+            persona: request.persona,
+            rawUserQuery: request.rawUserQuery,
+            history: request.history,
+          }
+        : undefined;
+    const promptData = buildGroundedPrompt(
+      request.query,
+      contextChunks,
+      this.config,
+      conversationalCtx
+    );
 
     let llmText = '';
     let isDegraded = false;

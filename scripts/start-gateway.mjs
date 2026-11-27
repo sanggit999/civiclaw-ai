@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { getSupabaseClient } from '../dist/storage/supabase-client.js';
-import { LegalSearchEngine } from '../dist/search/engine.js';
+import { DEFAULT_SEARCH_CONFIG, LegalSearchEngine } from '../dist/search/engine.js';
 import {
   GroundedRagPipeline,
   createRetrieverFromSearchEngine,
@@ -13,10 +13,12 @@ import { CivicLawAgent } from '../dist/agent/civic-law-agent.js';
 import { SupabaseSessionStore } from '../dist/session/supabase-session-store.js';
 import { InMemorySessionStore } from '../dist/session/in-memory-session-store.js';
 import { RuleAndLlmQueryCondenser } from '../dist/session/query-condenser.js';
+import { SinglePassLlmInputRouter } from '../dist/session/input-router.js';
 import { ContractLifecycleManager } from '../dist/contract/contract-lifecycle-manager.js';
 import { SupabaseContractVersionStore } from '../dist/contract/supabase-version-store.js';
 import { InMemoryContractVersionStore } from '../dist/contract/in-memory-version-store.js';
 import { createApiGateway } from '../dist/api/gateway-factory.js';
+import { loadSearchSettingsFromSupabase } from '../dist/search/config-loader.js';
 import { readAllProcessedChunks } from './upload-chunks-to-supabase.mjs';
 
 async function bootstrap() {
@@ -30,7 +32,7 @@ async function bootstrap() {
     console.warn(`⚠️ Cảnh báo Supabase: ${err.message}. Sử dụng chế độ In-Memory fallback.`);
   }
 
-  // 1. Nạp kho dữ liệu điều luật
+  // 1. Nạp kho dữ liệu điều luật & cấu hình động system_configs từ Supabase
   console.log('📚 Đang nạp 4.715 chunks dữ liệu luật...');
   let chunks = [];
   try {
@@ -40,7 +42,17 @@ async function bootstrap() {
     console.warn('⚠️ Không tìm thấy file dữ liệu processed. Dùng mảng rỗng.');
   }
 
-  const searchEngine = new LegalSearchEngine(chunks);
+  const searchSettings = await loadSearchSettingsFromSupabase(supabase);
+  if (searchSettings.loadedKeys.length > 0) {
+    console.log(`⚙️  Đã nạp cấu hình động system_configs: ${searchSettings.loadedKeys.join(', ')}`);
+  }
+
+  const searchEngine = new LegalSearchEngine(
+    chunks,
+    undefined,
+    searchSettings.config,
+    searchSettings.stopWords
+  );
 
   // 2. Thiết lập Session Store
   const sessionStore = supabase
@@ -59,7 +71,7 @@ async function bootstrap() {
   const gapRecorder = createGapRecorderFromQueue(searchEngine.getGapQueue());
   const llmProvider = new GeminiLlmProvider({
     apiKey: process.env.GEMINI_API_KEY,
-    modelName: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+    modelName: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
   });
   const citationVerifier = new RegexCitationVerifier();
 
@@ -75,7 +87,9 @@ async function bootstrap() {
   const civicLawAgent = new CivicLawAgent(
     {
       enableExploratoryLandscape: true,
-      confidenceThreshold: 0.65,
+      confidenceThreshold:
+        searchSettings.config.defaultConfidenceThreshold ??
+        DEFAULT_SEARCH_CONFIG.defaultConfidenceThreshold,
     },
     {
       ragPipeline,
@@ -84,12 +98,15 @@ async function bootstrap() {
     }
   );
 
+  const inputRouter = new SinglePassLlmInputRouter(llmProvider);
   const contextualPipeline = new ContextualRagPipeline(
     sessionStore,
     condenser,
     ragPipeline,
     undefined,
-    civicLawAgent
+    civicLawAgent,
+    searchSettings.chatPersona,
+    inputRouter
   );
 
   // 5. Khởi tạo Gateway Server

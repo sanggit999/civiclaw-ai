@@ -17,6 +17,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import {
   streamChatMessage,
+  formatChatMaintenanceFallback,
   ChatCitation,
   ChatPlaygroundMessage,
   GuidedTopic,
@@ -66,7 +67,7 @@ const QUICK_PRESETS = [
 
 function generateSessionId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return `session-play-${crypto.randomUUID().slice(0, 8)}`;
+    return crypto.randomUUID();
   }
   return `session-play-${Date.now().toString(36)}`;
 }
@@ -77,9 +78,9 @@ export default function ChatPlaygroundPage() {
   // Session & Inspector Parameters - Khởi tạo giá trị cố định để khớp SSR, sau đó cập nhật trên Client
   const [sessionId, setSessionId] = useState<string>('session-playground');
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.85);
+  const [isGatewayMaintenance, setIsGatewayMaintenance] = useState<boolean>(false);
 
-  // Sinh Session ID ngẫu nhiên duy nhất trên Client sau khi Component đã mount
+  // Sinh Session ID trên Client khi mount
   useEffect(() => {
     setSessionId(generateSessionId());
   }, []);
@@ -96,9 +97,9 @@ export default function ChatPlaygroundPage() {
       confidenceScore: 1.0,
       citations: [
         {
-          docNumber: '100/2019/NĐ-CP',
-          title: 'Nghị định Xử phạt vi phạm giao thông',
-          fullReference: 'Nghị định 100/2019/NĐ-CP & Nghị định 168/2024/NĐ-CP',
+          docNumber: '168/2024/NĐ-CP',
+          title: 'Nghị định Xử phạt vi phạm giao thông & trừ điểm GPLX',
+          fullReference: 'Nghị định 168/2024/NĐ-CP & Luật 36/2024/QH15',
           isVerified: true,
         },
         {
@@ -186,7 +187,6 @@ export default function ChatPlaygroundPage() {
           query,
           sessionId,
           domain: selectedDomain === 'all' ? undefined : selectedDomain,
-          confidenceThreshold,
         },
         // onToken callback
         (token: string) => {
@@ -224,8 +224,7 @@ export default function ChatPlaygroundPage() {
                 ? {
                     ...msg,
                     citations,
-                    isGrounded: true,
-                    confidenceScore: 0.95,
+                    isGrounded: citations.length > 0,
                   }
                 : msg
             )
@@ -246,29 +245,46 @@ export default function ChatPlaygroundPage() {
         }
       );
 
-      if (resultData?.guidedTopics && resultData.guidedTopics.length > 0) {
+      // Đồng bộ sessionId thật từ server để giữ mạch hội thoại & xưng hô xuyên suốt các lượt
+      setIsGatewayMaintenance(false);
+      if (resultData?.sessionId && resultData.sessionId !== sessionId) {
+        setSessionId(resultData.sessionId);
+      }
+
+      if (resultData) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === botMessageId
               ? {
                   ...msg,
-                  guidedTopics: resultData.guidedTopics,
+                  isThinking: false,
+                  content: accumulatedAnswer || resultData.answer,
+                  citations: resultData.citations,
+                  isGrounded: resultData.isGrounded,
+                  confidenceScore: resultData.confidenceScore,
+                  standaloneQuery: resultData.standaloneQuery,
+                  guidedTopics:
+                    resultData.guidedTopics && resultData.guidedTopics.length > 0
+                      ? resultData.guidedTopics
+                      : msg.guidedTopics,
                 }
               : msg
           )
         );
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Lỗi kết nối tới Gateway API. Vui lòng kiểm tra cổng 3001.';
+      console.warn('[ChatUI] Kết nối Gateway gián đoạn, hiển thị thông báo bảo trì:', err);
+      setIsGatewayMaintenance(true);
+      const maintenanceFallback = formatChatMaintenanceFallback(sessionId, query);
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === botMessageId
             ? {
                 ...msg,
                 isThinking: false,
-                content: `⚠️ Đã xảy ra sự cố khi gọi Trợ lý AI: ${errorMessage}`,
-                error: errorMessage,
+                content: maintenanceFallback.answer,
+                isGrounded: false,
+                error: 'MAINTENANCE',
               }
             : msg
         )
@@ -364,44 +380,26 @@ export default function ChatPlaygroundPage() {
 
             <Divider orientation="vertical" style={{ height: '24px' }} />
 
-            {/* Ngưỡng tin cậy (Confidence Threshold) */}
-            <HStack gap={2} vAlign="center">
-              <Text type="supporting" style={{ fontSize: '12px', fontWeight: 600, color: '#94A3B8' }}>
-                NGƯỠNG TIN CẬY:
-              </Text>
-              <input
-                type="range"
-                min="0.60"
-                max="0.95"
-                step="0.05"
-                value={confidenceThreshold}
-                onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-                style={{
-                  width: '100px',
-                  cursor: 'pointer',
-                  accentColor: '#2563EB',
-                }}
-              />
-              <span
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#10B981',
-                  fontVariantNumeric: 'tabular-nums',
-                  minWidth: '40px',
-                }}
-              >
-                {(confidenceThreshold * 100).toFixed(0)}%
-              </span>
-            </HStack>
-
-            <Divider orientation="vertical" style={{ height: '24px' }} />
-
             {/* Trạng thái Gateway */}
             <HStack gap={1} vAlign="center" style={{ marginLeft: 'auto' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-              <Text type="supporting" style={{ fontSize: '11.5px', color: '#10B981', fontWeight: 500 }}>
-                Gateway :3001 Live
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: isGatewayMaintenance ? '#F59E0B' : '#10B981',
+                }}
+              />
+              <Text
+                type="supporting"
+                style={{
+                  fontSize: '11.5px',
+                  color: isGatewayMaintenance ? '#F59E0B' : '#10B981',
+                  fontWeight: 500,
+                }}
+              >
+                {isGatewayMaintenance ? 'Gateway :3001 Bảo trì' : 'Gateway :3001 Live'}
               </Text>
             </HStack>
           </HStack>
