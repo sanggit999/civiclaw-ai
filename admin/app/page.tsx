@@ -185,7 +185,7 @@ export default function DashboardPage() {
       badgeLabel: 'Hybrid Search',
       badgeVariant: 'teal',
       accentColor: '#0EA5E9',
-      title: 'Tra cứu Nghị định 100/2019/NĐ-CP (Điều 5)',
+      title: 'Tra cứu Nghị định 168/2024/NĐ-CP (Điều 7)',
       detail: 'Công dân truy vấn quy định xử phạt vi phạm nồng độ cồn xe máy (Độ khớp 94%).',
     },
     {
@@ -355,7 +355,7 @@ export default function DashboardPage() {
             title="Kho Dữ Liệu Pháp Luật"
             value={stats?.legalChunksCount ?? health?.database?.chunkCount ?? 4715}
             unit="chunks"
-            subtitle="5 Bộ luật: Giao thông, Lao động, BHXH, Nhà ở, Dân sự"
+            subtitle="5 Văn bản: NĐ 168/2024, Luật 36/2024, BLLĐ 2019, BHXH 2024, Nhà ở 2023"
             badgeLabel="pgvector 768d"
             badgeVariant="teal"
             progress={100}

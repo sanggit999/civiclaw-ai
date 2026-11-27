@@ -30,11 +30,34 @@ export interface GatewayHealthResponse {
   };
 }
 
+export interface LegalDomainDocumentItem {
+  docNumber: string;
+  title?: string;
+  chunkCount: number;
+}
+
+export interface LegalDomainItem {
+  code: string;
+  name: string;
+  description?: string;
+  chunkCount: number;
+  documents: LegalDomainDocumentItem[];
+}
+
+export interface LegalDomainsResponse {
+  totalChunks: number;
+  domains: LegalDomainItem[];
+  isOfflineFallback?: boolean;
+}
+
 export interface LegalSearchResultItem {
   id: string;
   document_number: string;
   article_number: string;
   clause_number?: string;
+  point_number?: string;
+  full_reference?: string;
+  chapter?: string;
   title?: string;
   content: string;
   domain?: string;
@@ -42,11 +65,24 @@ export interface LegalSearchResultItem {
   similarity: number;
 }
 
+export interface LegalSearchOptions {
+  docNumber?: string;
+  page?: number;
+  mode?: 'admin' | 'citizen';
+}
+
 export interface LegalSearchResponse {
   query: string;
   domain?: string;
+  docNumber?: string;
   total: number;
+  totalMatches?: number;
+  page?: number;
+  limit?: number;
+  searchMode?: 'browse' | 'search';
   results: LegalSearchResultItem[];
+  isOfflineFallback?: boolean;
+  errorMessage?: string;
 }
 
 export interface UnresolvedQueryItem {
@@ -297,40 +333,106 @@ export async function fetchGatewayHealth(): Promise<GatewayHealthResponse> {
 }
 
 /**
- * Tìm kiếm văn bản pháp luật Hybrid Search qua Gateway
+ * Lấy danh sách lĩnh vực & số lượng văn bản thực tế từ Gateway (Single Source of Truth)
+ */
+export async function fetchLegalDomains(): Promise<LegalDomainsResponse> {
+  const baseUrl = getGatewayBaseUrl();
+  try {
+    const raw = await httpClient.get<Record<string, any>>(`${baseUrl}/domains`, {
+      timeoutMs: 5000,
+    });
+    const payload = raw?.data || raw;
+    if (Array.isArray(payload?.domains)) {
+      return {
+        totalChunks: Number(payload.totalChunks) || 0,
+        domains: payload.domains,
+      };
+    }
+  } catch {
+    // Fallback đồng bộ theo đúng 4 lĩnh vực đang có dữ liệu khi Gateway offline
+  }
+
+  return {
+    totalChunks: 4715,
+    isOfflineFallback: true,
+    domains: [
+      {
+        code: 'TRAFFIC',
+        name: 'Giao thông đường bộ',
+        description: 'Nghị định 168/2024/NĐ-CP & Luật TTATGTĐB 36/2024/QH15',
+        chunkCount: 1841,
+        documents: [
+          { docNumber: '168/2024/NĐ-CP', title: 'Nghị định 168/2024/NĐ-CP (Xử phạt GTĐB & trừ điểm GPLX)', chunkCount: 1051 },
+          { docNumber: '36/2024/QH15', title: 'Luật Trật tự, an toàn giao thông đường bộ 2024', chunkCount: 790 },
+        ],
+      },
+      {
+        code: 'LABOR',
+        name: 'Lao động & Tiền lương',
+        description: 'Bộ luật Lao động 2019 (45/2019/QH14)',
+        chunkCount: 843,
+        documents: [{ docNumber: '45/2019/QH14', title: 'Bộ luật Lao động 2019', chunkCount: 843 }],
+      },
+      {
+        code: 'SOCIAL_INSURANCE',
+        name: 'Bảo hiểm xã hội',
+        description: 'Luật Bảo hiểm xã hội 2024 (41/2024/QH15)',
+        chunkCount: 810,
+        documents: [{ docNumber: '41/2024/QH15', title: 'Luật Bảo hiểm xã hội 2024', chunkCount: 810 }],
+      },
+      {
+        code: 'HOUSING',
+        name: 'Nhà ở & Cư trú',
+        description: 'Luật Nhà ở 2023 (27/2023/QH15)',
+        chunkCount: 1221,
+        documents: [{ docNumber: '27/2023/QH15', title: 'Luật Nhà ở 2023', chunkCount: 1221 }],
+      },
+    ],
+  };
+}
+
+/**
+ * Tìm kiếm & duyệt văn bản pháp luật qua Gateway (hỗ trợ Browse Mode, lọc docNumber, phân trang)
  */
 export async function searchLaws(
   query: string,
   domain?: string,
-  limit: number = 10
+  limit: number = 20,
+  options?: LegalSearchOptions
 ): Promise<LegalSearchResponse> {
   const baseUrl = getGatewayBaseUrl();
+  const mode = options?.mode ?? 'admin';
+  const page = options?.page ?? 1;
+
   try {
     const raw = await httpClient.post<Record<string, any>>(`${baseUrl}/search`, {
       query,
       domain,
+      docNumber: options?.docNumber,
       limit,
+      page,
+      mode,
     });
 
     const searchData = raw?.data || raw;
     const rawList = Array.isArray(searchData?.results) ? searchData.results : [];
 
     const results: LegalSearchResultItem[] = rawList.map((item: any, idx: number) => {
-      // Nếu là định dạng { chunk, score } từ LegalSearchEngine
+      // Nếu là định dạng { chunk, score } từ LegalSearchEngine (camelCase LegalChunk)
       if (item?.chunk) {
+        const c = item.chunk;
+        const fullRef = c.fullReference || c.full_reference || '';
         return {
-          id: item.chunk.id || `chunk-${idx}`,
-          document_number:
-            item.chunk.document_number ||
-            item.chunk.documentNumber ||
-            (item.chunk.domain === 'Giao thông' || domain === 'Giao thông'
-              ? '100/2019/NĐ-CP'
-              : 'Văn bản Luật'),
-          article_number: item.chunk.article_number || item.chunk.articleNumber || '',
-          clause_number: item.chunk.clause_number || item.chunk.clauseNumber || '',
-          title: item.chunk.title || '',
-          content: item.chunk.content || '',
-          domain: item.chunk.domain || domain || 'Quy định chung',
+          id: c.id || `chunk-${idx}`,
+          document_number: c.docNumber || c.document_number || c.documentNumber || 'Văn bản Luật',
+          article_number: c.article || c.article_number || c.articleNumber || '',
+          clause_number: c.clause || c.clause_number || c.clauseNumber || '',
+          point_number: c.point || c.point_number || c.pointNumber || '',
+          full_reference: fullRef,
+          chapter: c.chapter || '',
+          title: fullRef || c.title || c.chapter || c.domain || 'Quy định chung',
+          content: c.content || '',
+          domain: c.domain || domain || 'OTHER',
           score: typeof item.score === 'number' ? item.score : 0.9,
           similarity: typeof item.score === 'number' ? item.score : 0.9,
         };
@@ -338,39 +440,74 @@ export async function searchLaws(
       // Nếu đã là phẳng LegalSearchResultItem
       return {
         id: item?.id || `chunk-${idx}`,
-        document_number: item?.document_number || '',
-        article_number: item?.article_number || '',
-        clause_number: item?.clause_number || '',
-        title: item?.title || '',
+        document_number: item?.document_number || item?.docNumber || 'Văn bản Luật',
+        article_number: item?.article_number || item?.article || '',
+        clause_number: item?.clause_number || item?.clause || '',
+        point_number: item?.point_number || item?.point || '',
+        full_reference: item?.full_reference || item?.fullReference || '',
+        chapter: item?.chapter || '',
+        title: item?.title || item?.full_reference || '',
         content: item?.content || '',
-        domain: item?.domain || domain || 'Quy định chung',
+        domain: item?.domain || domain || 'OTHER',
         score: item?.score ?? item?.similarity ?? 0.9,
         similarity: item?.similarity ?? item?.score ?? 0.9,
       };
     });
 
+    const totalMatches = searchData?.totalMatches ?? searchData?.total ?? results.length;
+
     return {
       query,
       domain,
-      total: searchData?.total ?? results.length,
+      docNumber: options?.docNumber,
+      total: totalMatches,
+      totalMatches,
+      page: searchData?.page ?? page,
+      limit: searchData?.limit ?? limit,
+      searchMode: searchData?.searchMode,
       results,
     };
-  } catch {
-    // Fallback kết quả mô phỏng mẫu từ 5 bộ luật để kiểm thử offline
+  } catch (err: unknown) {
+    // Nếu server trả lỗi HTTP thật (400/500), không che giấu bằng mock giả
+    if (err instanceof HttpError && err.status >= 400) {
+      const errBody = err.data as Record<string, any> | null;
+      const detailMessage = errBody?.error?.message || errBody?.message || err.message;
+      return {
+        query,
+        domain,
+        docNumber: options?.docNumber,
+        total: 0,
+        totalMatches: 0,
+        page,
+        limit,
+        results: [],
+        errorMessage: detailMessage,
+      };
+    }
+
+    // Chỉ fallback khi thực sự offline / mất kết nối mạng tới Gateway
     return {
       query,
       domain,
+      docNumber: options?.docNumber,
       total: 1,
+      totalMatches: 1,
+      page: 1,
+      limit,
+      searchMode: 'search',
+      isOfflineFallback: true,
       results: [
         {
-          id: 'chunk-mock-001',
-          document_number: '100/2019/NĐ-CP',
-          article_number: 'Điều 5',
-          clause_number: 'Khoản 8',
-          title: 'Xử phạt vi phạm nồng độ cồn',
-          domain: domain || 'Giao thông',
+          id: 'chunk-offline-sample',
+          document_number: '168/2024/NĐ-CP',
+          article_number: 'Điều 6',
+          clause_number: 'Khoản 6',
+          point_number: 'Điểm c',
+          full_reference: 'Điểm c Khoản 6 Điều 6 Nghị định 168/2024/NĐ-CP',
+          title: 'Điểm c Khoản 6 Điều 6 Nghị định 168/2024/NĐ-CP',
+          domain: domain || 'TRAFFIC',
           content:
-            'Phạt tiền từ 30.000.000 đồng đến 40.000.000 đồng đối với người điều khiển xe ô tô trên đường mà trong máu hoặc hơi thở có nồng độ cồn vượt quá 80 miligam/100 mililít máu hoặc vượt quá 0,4 miligam/1 lít khí thở.',
+            'Phạt tiền từ 6.000.000 đồng đến 8.000.000 đồng đối với người điều khiển xe ô tô trên đường mà trong máu hoặc hơi thở có nồng độ cồn nhưng chưa vượt quá 50 miligam/100 mililít máu hoặc chưa vượt quá 0,25 miligam/1 lít khí thở.',
           score: 0.95,
           similarity: 0.95,
         },
@@ -779,5 +916,24 @@ export async function streamChatMessage(
   }
 
   return data;
+}
+
+export const DEFAULT_CHAT_MAINTENANCE_NOTICE =
+  '🔧 THÔNG BÁO VẬN HÀNH HỆ THỐNG:\n' +
+  'Hệ thống Trợ lý Pháp lý CivicLaw AI hiện đang trong phiên bảo trì hoặc tạm gián đoạn kết nối.\n\n' +
+  'Quý công dân vui lòng thử lại sau ít phút hoặc tạo phiên hội thoại mới. Xin chân thành cảm ơn sự thông cảm của Quý vị!';
+
+/**
+ * Chuyển đổi mọi lỗi kết nối / sập Gateway ở /chat thành phản hồi Bảo trì thân thiện
+ */
+export function formatChatMaintenanceFallback(sessionId: string, query: string): ChatApiResponse['data'] {
+  return {
+    sessionId,
+    query,
+    answer: DEFAULT_CHAT_MAINTENANCE_NOTICE,
+    citations: [],
+    isGrounded: false,
+    confidenceScore: 0,
+  };
 }
 
