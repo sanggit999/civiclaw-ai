@@ -1,10 +1,17 @@
 import { LegalChunk, LegalDomain } from '../ingestion/types.js';
+import { ConversationPersona } from '../session/persona.js';
+
+export type SearchMode = 'citizen' | 'admin';
 
 export interface SearchQuery {
   text: string;
-  domain?: LegalDomain;
+  domain?: LegalDomain | string;
+  docNumber?: string;
   limit?: number;
-  confidenceThreshold?: number; // Mặc định 0.65
+  page?: number;
+  confidenceThreshold?: number; // Mặc định 0.65 (cho mode 'citizen')
+  mode?: SearchMode;
+  skipGapLogging?: boolean;
 }
 
 export interface SearchResultItem {
@@ -16,8 +23,26 @@ export interface SearchResponse {
   isFound: boolean;
   topScore: number;
   results: SearchResultItem[];
+  totalMatches?: number;
+  page?: number;
+  limit?: number;
+  searchMode?: 'browse' | 'search';
   message: string;
   loggedToKnowledgeGap: boolean;
+}
+
+export interface DomainDocumentSummary {
+  docNumber: string;
+  title?: string;
+  chunkCount: number;
+}
+
+export interface DomainSummaryItem {
+  code: string;
+  name: string;
+  description?: string;
+  chunkCount: number;
+  documents: DomainDocumentSummary[];
 }
 
 export type GapStatus = 'unreviewed' | 'resolved' | 'ignored';
@@ -37,6 +62,20 @@ export interface SearchEngineConfig {
   defaultLimit: number;               // Số lượng kết quả mặc định (5)
   minQueryLength: number;             // Độ dài ký tự tối thiểu để tìm kiếm (3)
   weights: SearchScoringWeights;
+}
+
+export interface LoadedSearchConfig {
+  defaultConfidenceThreshold?: number;
+  defaultLimit?: number;
+  minQueryLength?: number;
+  weights?: Partial<SearchScoringWeights>;
+}
+
+export interface LoadedSearchSettings {
+  config: LoadedSearchConfig;
+  stopWords?: Set<string>;
+  chatPersona?: Partial<ConversationPersona>;
+  loadedKeys: string[];
 }
 
 export interface UnresolvedQuery {

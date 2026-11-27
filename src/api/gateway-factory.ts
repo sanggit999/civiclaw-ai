@@ -44,10 +44,14 @@ export function createApiGateway(deps?: GatewayDependencies): ApiGatewayServer {
     router.register('GET', '/api/v1/contracts/versions', (req, res) => contractController.handleListVersions(req, res));
   }
 
-  // 4. Search Controller (nếu có search engine)
+  // 4. Search & Domains Controller (nếu có search engine)
   if (deps?.searchEngine) {
-    const searchController = new SearchController(deps.searchEngine);
+    const searchController = new SearchController(deps.searchEngine, deps?.supabaseClient);
     router.register('POST', '/api/v1/search', (req, res) => searchController.handleSearch(req, res));
+    router.register('GET', '/api/v1/domains', (req, res) => searchController.handleListDomains(req, res));
+    router.register('POST', '/api/v1/search/reload-config', (req, res) =>
+      searchController.handleReloadConfig(req, res)
+    );
   }
 
   return new ApiGatewayServer(deps?.config, router);
