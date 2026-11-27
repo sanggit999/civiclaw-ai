@@ -1,5 +1,12 @@
 import { LegalChunk } from '../ingestion/types.js';
+import { buildPersonaStyleInstruction, ConversationPersona } from '../session/persona.js';
 import { RagPipelineConfig } from './types.js';
+
+export interface ConversationalPromptContext {
+  persona?: ConversationPersona;
+  rawUserQuery?: string;
+  history?: Array<{ role: string; content: string }>;
+}
 
 /**
  * Cấu hình mặc định cho luồng RAG pháp lý (Anti-Hardcode)
@@ -8,16 +15,13 @@ export const DEFAULT_RAG_CONFIG: RagPipelineConfig = {
   defaultTopK: 5,
   defaultConfidenceThreshold: 0.65,
   maxContextLengthChars: 8000,
-  systemPrompt: `Bạn là CivicLaw AI - Trợ lý pháp lý thông minh, minh bạch và chính xác của Việt Nam.
-Nhiệm vụ của Bạn là giải đáp thắc mắc pháp luật cho công dân dựa trên các văn bản quy phạm pháp luật được cung cấp.
+  systemPrompt: `Bạn là CivicLaw AI - Trợ lý pháp lý thông minh, gần gũi và minh bạch của Việt Nam.
+Nhiệm vụ của bạn là giải đáp thắc mắc pháp luật một cách tự nhiên, dễ hiểu dựa trên các văn bản quy phạm pháp luật được cung cấp.
 
 QUY TẮC BẮT BUỘC (NON-NEGOTIABLE RULES):
 1. 100% CĂN CỨ VÀ TRÍCH DẪN: Mọi nhận định, mức phạt, hay nghĩa vụ pháp lý phải được trích dẫn đích danh [Điểm... Khoản... Điều... Số hiệu văn bản quy phạm pháp luật...].
 2. TUYỆT ĐỐI KHÔNG ẢO GIÁC: Chỉ sử dụng các thông tin và điều luật có trong phần "NGỮ CẢNH PHÁP LUẬT" bên dưới. Tuyệt đối không tự suy đoán, bịa đặt số tiền phạt hoặc trích dẫn văn bản không có trong ngữ cảnh.
-3. CẤU TRÚC PHẢN HỒI BẮT BUỘC GỒM 3 PHẦN:
-   - 📌 KẾT LUẬN NHANH: Trả lời ngắn gọn, trực diện vào vấn đề (có vi phạm không, mức phạt chính bao nhiêu, có bị trừ điểm GPLX hay không).
-   - ⚖️ PHÂN TÍCH CHI TIẾT: Diễn giải rõ ràng hành vi, chủ thể, điều kiện áp dụng và hình thức phạt bổ sung.
-   - 📚 CĂN CỨ PHÁP LÝ: Liệt kê rõ ràng danh mục các trích dẫn pháp lý chính thức tương ứng.`,
+3. PHONG CÁCH TRẢ LỜI TỰ NHIÊN: Trò chuyện rõ ràng, đi thẳng vào câu trả lời chính trước rồi giải thích ngắn gọn điều kiện/mức phạt bổ sung (nếu có), trình bày tự nhiên như đang tư vấn trực tiếp và kết thúc bằng 1 gợi ý nhẹ nhàng nếu người dùng muốn hỏi sâu thêm hoặc chuyển ý khác.`,
   fallbackMessage: `⚠️ THÔNG BÁO VỀ CĂN CỨ PHÁP LÝ:
 Hiện tại CivicLaw AI chưa có dữ liệu chính thức về vấn đề Bạn hỏi trong các bộ luật cốt lõi hiện có.
 Để bảo đảm tính chính xác tuyệt đối và tránh cung cấp thông tin sai lệch, hệ thống đã ghi nhận câu hỏi của Bạn vào Hàng đợi tri thức để Quản trị viên cập nhật văn bản quy phạm pháp luật tương ứng.`,
@@ -71,23 +75,38 @@ export function formatContextChunks(
 export function buildGroundedPrompt(
   query: string,
   chunks: LegalChunk[],
-  config?: Partial<RagPipelineConfig>
+  config?: Partial<RagPipelineConfig>,
+  conversationalCtx?: ConversationalPromptContext
 ): { prompt: string; systemInstruction: string } {
   const mergedConfig = { ...DEFAULT_RAG_CONFIG, ...config };
   const contextText = formatContextChunks(chunks, mergedConfig.maxContextLengthChars);
+
+  let systemInstruction = mergedConfig.systemPrompt;
+  if (conversationalCtx?.persona) {
+    systemInstruction += buildPersonaStyleInstruction(
+      conversationalCtx.persona,
+      conversationalCtx.history
+    );
+  }
+
+  const displayQuestion = (conversationalCtx?.rawUserQuery || query).trim();
+  const normalizedBlock =
+    conversationalCtx?.rawUserQuery && conversationalCtx.rawUserQuery.trim() !== query.trim()
+      ? `\nTRUY VẤN PHÁP LÝ ĐÃ CHUẨN HÓA:\n${query}\n`
+      : '';
 
   const prompt = `--- BẮT ĐẦU NGỮ CẢNH PHÁP LUẬT ---
 ${contextText}
 --- KẾT THÚC NGỮ CẢNH PHÁP LUẬT ---
 
-CÂU HỎI CỦA CÔNG DÂN:
-${query}
-
-Hãy trả lời câu hỏi trên theo đúng các quy tắc bắt buộc và cấu trúc 3 phần đã được hướng dẫn.`;
+CÂU HỎI CỦA NGƯỜI DÙNG:
+${displayQuestion}
+${normalizedBlock}
+Hãy trả lời câu hỏi trên tự nhiên, thân thiện và đúng các quy tắc trích dẫn bắt buộc đã được hướng dẫn.`;
 
   return {
     prompt,
-    systemInstruction: mergedConfig.systemPrompt,
+    systemInstruction,
   };
 }
 

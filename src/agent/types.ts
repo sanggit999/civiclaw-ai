@@ -1,5 +1,6 @@
 import { GroundedCitation, RagQueryResponse } from '../rag/types.js';
 import { LegalChunk } from '../ingestion/types.js';
+import { ConversationPersona } from '../session/persona.js';
 
 /**
  * 5 Lĩnh vực pháp luật cốt lõi trong cơ sở dữ liệu của CivicLaw AI
@@ -81,6 +82,8 @@ export interface CivicLawAgentOptions {
   confidenceThreshold?: number;    // Ngưỡng điểm tin cậy tối thiểu
   enableExploratoryLandscape?: boolean; // Bật chế độ tổng quan lĩnh vực khi câu hỏi broad
   defaultDomain?: LegalDomain;     // Lĩnh vực mặc định nếu không xác định
+  enableQueryRewriteRetry?: boolean; // Bật thử lại vòng 2 bằng LLM Query Rewriting kiểu Hermes
+  queryRewritePromptTemplate?: string; // Mẫu prompt viết lại từ khóa pháp luật
 }
 
 /**
@@ -91,6 +94,14 @@ export const DEFAULT_CIVIC_LAW_AGENT_OPTIONS: Required<CivicLawAgentOptions> = {
   confidenceThreshold: 0.65,
   enableExploratoryLandscape: true,
   defaultDomain: 'TRAFFIC',
+  enableQueryRewriteRetry: true,
+  queryRewritePromptTemplate: `Bạn là trợ lý chuyển ngữ truy vấn pháp luật Việt Nam (Query Rewriter).
+Nhiệm vụ: Chuyển câu nói tự nhiên hoặc câu truy vấn chưa tìm trúng điều khoản bên dưới thành MỘT cụm từ khóa CÔ ĐỌNG bằng THUẬT NGỮ PHÁP LUẬT VIỆT NAM chính thức để tìm kiếm chính xác trong 5 văn bản luật (Giao thông đường bộ NĐ 168/2024 & Luật 36/2024, Lao động 2019, BHXH 2024, Nhà ở 2023, Dân sự 2015).
+
+YÊU CẦU:
+- Bỏ toàn bộ từ xưng hô (anh, em, tôi, nhờ...) và từ đệm hỏi dư thừa ("tối đa", "là bao lâu", "bao nhiêu tiền", "theo quy định", "như thế nào") để giữ lại cụm danh từ/hành vi pháp lý cô đọng nhất.
+- Chuyển từ địa phương/văn nói sang đúng thuật ngữ văn bản luật (vd: "vượt đèn đỏ" -> "không chấp hành hiệu lệnh của đèn tín hiệu giao thông"; "quên đội nón" -> "xe mô tô không đội mũ bảo hiểm"; "bị thổi" -> "xử phạt vi phạm giao thông"; "xe máy" -> "xe mô tô").
+- CHỈ TRẢ VỀ DUY NHẤT CỤM TỪ KHÓA / CÂU TRUY VẤN (không giải thích).`,
 };
 
 /**
@@ -101,6 +112,9 @@ export interface CivicLawAgentRequest {
   domain?: string;
   sessionId?: string;
   confidenceThreshold?: number;
+  persona?: ConversationPersona;
+  rawUserQuery?: string;
+  history?: Array<{ role: string; content: string }>;
 }
 
 /**

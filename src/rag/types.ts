@@ -1,4 +1,5 @@
 import { LegalChunk } from '../ingestion/types.js';
+import { ConversationPersona } from '../session/persona.js';
 
 /**
  * Trích dẫn pháp lý được định danh và kiểm chứng
@@ -60,6 +61,9 @@ export interface RagQueryRequest {
   domain?: string;
   topK?: number;
   confidenceThreshold?: number;
+  persona?: ConversationPersona;
+  rawUserQuery?: string;
+  history?: Array<{ role: string; content: string }>;
 }
 
 /**
