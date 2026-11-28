@@ -80,5 +80,14 @@ describe('Query Condenser & Pure LLM-only Rewriting (Spec 005 + Spec 016 Option 
     const errRes = await errCondenser.condenseQuery('Thế còn ô tô thì sao?', sampleHistory);
     expect(errRes.isCondensed).toBe(false);
     expect(errRes.standaloneQuery).toBe('Thế còn ô tô thì sao?');
+
+    // Khi LLM trả chuỗi rác quá ngắn (< 3 ký tự) -> giữ nguyên câu gốc an toàn
+    const tinyJunkLlm: ILlmProvider = {
+      generate: vi.fn().mockResolvedValue({ text: 'ok' }),
+    };
+    const tinyCondenser = new RuleAndLlmQueryCondenser(tinyJunkLlm);
+    const tinyRes = await tinyCondenser.condenseQuery('Thế còn ô tô thì sao?', sampleHistory);
+    expect(tinyRes.isCondensed).toBe(false);
+    expect(tinyRes.standaloneQuery).toBe('Thế còn ô tô thì sao?');
   });
 });

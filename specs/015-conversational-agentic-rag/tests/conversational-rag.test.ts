@@ -15,7 +15,7 @@ import { RegexCitationVerifier } from '../../../src/rag/citation-verifier.js';
 import { buildGroundedPrompt, DEFAULT_RAG_CONFIG } from '../../../src/rag/prompt-builder.js';
 import { LegalSearchEngine } from '../../../src/search/engine.js';
 import { LegalChunk } from '../../../src/ingestion/types.js';
-import { ILlmProvider } from '../../../src/rag/types.js';
+import { ILlmProvider, IRagPipeline } from '../../../src/rag/types.js';
 
 const testChunks: LegalChunk[] = [
   {
@@ -319,8 +319,8 @@ describe('Spec 015 - Conversational Agentic RAG', () => {
 
     // 6. Vòng 1 trả chunks lệch điểm (isGrounded: true nhưng citations: [] vì LLM từ chối bịa) -> vẫn phải kích hoạt Vòng 2 Query Rewrite Retry
     let v1SearchCount = 0;
-    const offTopicThenHitRag = {
-      async query(req: { query: string }) {
+    const offTopicThenHitRag: IRagPipeline = {
+      async query(_req) {
         v1SearchCount++;
         if (v1SearchCount === 1) {
           return {
@@ -353,7 +353,7 @@ describe('Spec 015 - Conversational Agentic RAG', () => {
     };
     const offTopicRetryAgent = new CivicLawAgent(
       { maxIterations: 3, confidenceThreshold: 0.65 },
-      { ragPipeline: offTopicThenHitRag as any, llmProvider: rewriteLlm }
+      { ragPipeline: offTopicThenHitRag, llmProvider: rewriteLlm }
     );
     const offTopicRetryRes = await offTopicRetryAgent.process({
       query: 'vượt đèn đỏ xe máy bị phạt bao nhiêu',

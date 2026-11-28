@@ -18,7 +18,7 @@
 2. **Phòng vệ 3 cấp khi Hết Free Quota (`429`), Mất mạng hoặc Server sập:**
    - **Cấp 1 (Model Failover cho Free Quota):** Khi gặp `429` (hoặc `503`/`404`), `GeminiLlmProvider` tự động thử chuyển sang `fallbackModel` (tận dụng bucket quota riêng của model phụ).
    - **Cấp 2 (Graceful Degradation khi LLM hết sạch quota):**
-     - `InputRouter` tự rơi về bộ Fast Rule (đã bổ sung `removeVietnameseDiacritics()` để hiểu được câu xã giao & đổi ý không dấu).
+     - `InputRouter` tự rơi về bộ Fast Rule (đã bổ sung `removeVietnameseDiacritics()` để hiểu được câu xã giao không dấu), còn `RuleAndLlmQueryCondenser` giữ nguyên câu gốc an toàn (`isCondensed: false`) thay vì đoán regex.
      - `GroundedRagPipeline` kích hoạt **Extractive Grounded Fallback** trích xuất nguyên văn điều luật từ kho 4.715 chunks cục bộ (vẫn trả được căn cứ đúng cho người dùng mà 0% bịa đặt).
    - **Cấp 3 (Maintenance UX khi Server sập / Mất mạng hoàn toàn):**
      - Khi backend gặp lỗi nghiêm trọng hoặc `/chat` trên trình duyệt mất kết nối tới Gateway (`ECONNREFUSED`, timeout, HTTP 5xx), hiển thị thống nhất thông điệp **`🔧 THÔNG BÁO VẬN HÀNH HỆ THỐNG`** (*Hệ thống đang bảo trì / tạm gián đoạn kết nối, vui lòng thử lại sau ít phút*).
@@ -33,7 +33,7 @@
 ### Kịch bản 2: Fallback an toàn khi Free Quota API hết (`429`) hoặc LLM trả JSON lỗi
 * **Given:** `ILlmProvider` ném lỗi `Gemini API Error (429): Resource has been exhausted` hoặc trả chuỗi không phải JSON.
 * **When:** `SinglePassLlmInputRouter` hoặc `GeminiLlmProvider` thực thi.
-* **Then:** `GeminiLlmProvider` thử `fallbackModel` khi gặp `429`; nếu vẫn lỗi, `InputRouter` rơi êm về Fast Rule hỗ trợ không dấu (`"em chao anh"` -> chào theo vai `Anh – em`, `"the con o to"` -> condense ngữ cảnh) với `usedLlm: false`, không làm sập phiên chat.
+* **Then:** `GeminiLlmProvider` thử `fallbackModel` khi gặp `429`; nếu vẫn lỗi, `InputRouter` rơi êm về Fast Rule hỗ trợ không dấu (`"em chao anh"` -> chào theo vai `Anh – em`) với `usedLlm: false` và `RuleAndLlmQueryCondenser` giữ nguyên truy vấn gốc an toàn (`isCondensed: false`), không làm sập phiên chat.
 
 ### Kịch bản 3: Thông điệp Bảo trì chuẩn khi Mất mạng / Server sập
 * **Given:** Gateway (`:3001`) dừng hoạt động hoặc mất kết nối mạng từ UI `/chat` (`admin/app/chat/page.tsx`).

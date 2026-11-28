@@ -123,5 +123,6 @@ describe('Slice 2: Chat Controller (REST & SSE Streaming)', () => {
     expect(streamOutput).toContain('event: token');
     expect(streamOutput).toContain('event: done');
     expect(streamOutput).toContain('"isGrounded":true');
+    expect(streamOutput).toContain('"standaloneQuery"');
   });
 });

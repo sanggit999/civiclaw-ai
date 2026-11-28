@@ -45,7 +45,7 @@ describe('BDD Scenarios: Multi-turn Legal Dialogue & Chat Session Memory (Slice 
 
   function createPipeline(mockLlm: MockLlmProvider, customConfig?: any, condenserLlm?: MockLlmProvider) {
     const sessionStore = new InMemorySessionStore();
-    // Sử dụng Heuristic Rule-based Condenser (hoặc condenserLlm riêng) để không xung đột từ khóa với RAG
+    // Sử dụng Pure LLM-only Condenser (hoặc condenserLlm riêng) để không xung đột từ khóa với RAG
     const condenser = new RuleAndLlmQueryCondenser(condenserLlm, customConfig);
     const verifier = new RegexCitationVerifier();
 

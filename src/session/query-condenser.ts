@@ -62,7 +62,7 @@ HÃY TRẢ VỀ DUY NHẤT CÂU TRUY VẤN TÁI TẠO ĐỘC LẬP:`;
         .replace(/^(Câu truy vấn độc lập|Câu hỏi tái tạo|Truy vấn):\s*/i, '')
         .trim();
 
-      if (!condensed || condensed.toLowerCase() === trimmed.toLowerCase()) {
+      if (!condensed || condensed.length < 3 || condensed.toLowerCase() === trimmed.toLowerCase()) {
         return {
           standaloneQuery: trimmed,
           isCondensed: false,

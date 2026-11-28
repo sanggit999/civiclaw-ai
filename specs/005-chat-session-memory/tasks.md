@@ -20,7 +20,7 @@ Quy tắc: Mỗi lát cắt đi xuyên từ Input -> Logic -> Output và **bắt
 
 ### Lát 2: Tái Tạo Câu Hỏi Theo Ngữ Cảnh (Query Condenser & Topic Shift Slice)
 - [x] **t5.2.1:** Xây dựng `src/session/query-condenser.ts` (`RuleAndLlmQueryCondenser`).
-- [x] **t5.2.2:** Xây dựng bộ quy tắc Heuristic nhận diện mẫu câu nối và tỉnh lược tiếng Việt (*"thế còn...", "còn xe...", "lỗi đó...", "trường hợp này..."*).
+- [x] **t5.2.2:** Xây dựng bộ quy tắc Heuristic ban đầu (đã được nâng cấp lên kiến trúc Pure LLM-only tại Spec 016 Cách B để tránh sai lệch tiếng Việt không dấu/từ đồng âm).
 - [x] **t5.2.3:** Tích hợp cơ chế tái tạo câu hỏi phụ thuộc thành câu hỏi độc lập (Standalone Query), tự động nhận diện chuyển chủ đề (Topic Shift).
 - [x] **t5.2.4:** Viết bộ kiểm thử unit test trong `specs/005-chat-session-memory/tests/query-condenser.test.ts`.
   - **Lệnh kiểm tra nghiệm thu:**

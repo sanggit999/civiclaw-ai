@@ -110,7 +110,7 @@ export class CivicLawAgent {
         const verifiedSources: LegalChunk[] = landscape.documents.map((doc) => ({
           id: `landscape-${doc.docNumber}`,
           docNumber: doc.docNumber,
-          domain: (doc.domain === 'INSURANCE' ? 'SOCIAL_INSURANCE' : doc.domain) as any,
+          domain: doc.domain === 'INSURANCE' ? 'SOCIAL_INSURANCE' : doc.domain,
           article: 'Toàn văn',
           content: `${doc.title}. ${doc.scopeDescription}. Chuyên đề trọng tâm: ${doc.keyTopics.join(', ')}.`,
           fullReference: doc.officialRef,

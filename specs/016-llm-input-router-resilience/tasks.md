@@ -2,9 +2,9 @@
 
 ---
 
-### Lát cắt 1: Chuẩn hóa Không dấu cho Fallback Rules (`persona.ts`, `intent-router.ts`, `query-condenser.ts`)
-- [x] `t1.1: Viết Unit Test TDD cho chào hỏi/xưng hô/Topic Shift không dấu ('em chao anh', 'cam on chi', 'the con o to', 'thoi bo qua vu xe')`
-- [x] `t1.2: Bổ sung removeVietnameseDiacritics() vào persona.ts, intent-router.ts, query-condenser.ts (giữ nguyên toàn bộ behavior có dấu cũ & chặn false-positive)`
+### Lát cắt 1: Chuẩn hóa Không dấu cho Fallback Rules (`persona.ts`, `intent-router.ts`) & Pure LLM-only (`query-condenser.ts`)
+- [x] `t1.1: Viết Unit Test TDD cho chào hỏi/xưng hô không dấu ('em chao anh', 'cam on chi') và Pure LLM-only query-condenser
+- [x] `t1.2: Bổ sung removeVietnameseDiacritics() vào persona.ts, intent-router.ts và chuyển query-condenser.ts sang Pure LLM-only`
 *👉 Lệnh kiểm tra Lát 1:* `npm test -- specs/016-llm-input-router-resilience/tests/input-router-resilience.test.ts`
 
 ---

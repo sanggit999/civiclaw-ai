@@ -100,14 +100,16 @@ export class ChatController {
       // 5. Phát sự kiện hoàn tất (done)
       sse.sendEvent('done', {
         sessionId: result.sessionId,
+        standaloneQuery: result.standaloneQuery,
+        isCondensed: result.isCondensed,
         isGrounded: result.isGrounded,
         confidenceScore: result.confidenceScore,
-        domain: (result as any).domain,
-        guidedTopics: (result as any).guidedTopics,
-        decision: (result as any).decision,
+        domain: result.domain,
+        guidedTopics: result.guidedTopics,
+        decision: result.decision,
         metadata: {
           timestamp: new Date().toISOString(),
-          ...((result as any).metadata || {}),
+          ...(result.metadata || {}),
         },
       });
 

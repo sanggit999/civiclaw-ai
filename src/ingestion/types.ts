@@ -1,7 +1,7 @@
 /**
  * Các lĩnh vực pháp lý cốt lõi của CivicLaw AI
  */
-export type LegalDomain = 'TRAFFIC' | 'LABOR' | 'SOCIAL_INSURANCE' | 'HOUSING';
+export type LegalDomain = 'TRAFFIC' | 'LABOR' | 'SOCIAL_INSURANCE' | 'HOUSING' | 'CIVIL';
 
 /**
  * Metadata thông tin chung của một văn bản quy phạm pháp luật

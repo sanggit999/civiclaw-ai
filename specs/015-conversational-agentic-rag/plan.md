@@ -19,7 +19,7 @@ flowchart TD
         AG -->|Ngoài 5 luật| Fallback["honest_fallback"]
         AG -->|Tổng quan lĩnh vực| Landscape["domain_landscape"]
         AG -->|Tra cứu cụ thể| Search1["Iteration 1: search_legal_code\n(kèm persona, history, rawUserQuery)"]
-        Search1 -->|fallbackTriggered && có LLM| Rewrite["LLM Query Rewriter\nVăn nói -> Thuật ngữ luật"]
+        Search1 -->|fallbackTriggered hoặc citations rỗng| Rewrite["LLM Query Rewriter\nVăn nói -> Thuật ngữ luật"]
         Rewrite --> Search2["Iteration 2: search_legal_code"]
     end
 
